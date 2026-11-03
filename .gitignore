@@ -1,1 +1,18 @@
+# Dependencies
 node_modules/
+
+# Build outputs & compilation artifacts
+dist/
+build/
+*.js.map
+
+# Ignore compiled JavaScript files if your TypeScript files are the source of truth
+host/*.js
+renderer/*.js
+
+# OS / System files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/node_modules/
