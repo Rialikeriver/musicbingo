@@ -5,7 +5,9 @@ export interface Track {
   artist: string;
   album: string;
   filePath: string;
+  previewUrl?: string;
   startTime: number; // in seconds (for cropping/randomization)
+  endTime: number;
   duration: number;
 }
 
