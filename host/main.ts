@@ -1,17 +1,19 @@
-const { app, BrowserWindow, screen, ipcMain } = require('electron');
-const path = require('path');
-const { loadSettings, saveSettings, settingsPath } = require('./settings');
+import { app, BrowserWindow, screen, ipcMain } from 'electron';
+import path from 'path';
 
-let audienceWin;
+let audienceWin: BrowserWindow | null = null;
 
 const webPreferences = { preload: path.join(__dirname, 'preload.js') };
 
-function createHostWindow() {
+// Compiled code runs from dist/, but the HTML pages are still in host/
+const pagesDir = path.join(__dirname, '..', 'host');
+
+function createHostWindow(): void {
   const hostWin = new BrowserWindow({ width: 800, height: 600, title: 'Host', webPreferences });
-  hostWin.loadFile(path.join(__dirname, 'host.html'));
+  hostWin.loadFile(path.join(pagesDir, 'host.html'));
 }
 
-function createAudienceWindow() {
+function createAudienceWindow(): void {
   const displays = screen.getAllDisplays();
   const primary = screen.getPrimaryDisplay();
   const external = displays.find(d => d.id !== primary.id);
@@ -26,22 +28,16 @@ function createAudienceWindow() {
     audienceWin = new BrowserWindow({ width: 800, height: 600, x: 850, y: 50, title: 'Audience', webPreferences });
   }
 
-  audienceWin.loadFile(path.join(__dirname, 'audience.html'));
+  audienceWin.loadFile(path.join(pagesDir, 'audience.html'));
+  audienceWin.on('closed', () => { audienceWin = null; });
 }
 
 // When the host sends text, pass it to the audience window
-ipcMain.on('audience-text', (_event, text) => {
-  if (audienceWin) audienceWin.webContents.send('audience-text', text);
+ipcMain.on('audience-text', (_event, text: string) => {
+  audienceWin?.webContents.send('audience-text', text);
 });
 
 app.whenReady().then(() => {
-  // TEST: will remove after checking
-  const s = loadSettings();
-  console.log('Loaded:', s.branding.bannerIntervalSeconds);
-  s.branding.bannerIntervalSeconds = 15;
-  saveSettings(s);
-  console.log('Saved to:', settingsPath());
-
   createHostWindow();
   createAudienceWindow();
 });
