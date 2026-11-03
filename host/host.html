@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Host</title></head>
+<body style="font-family:sans-serif">
+  <h1>Host Control Panel</h1>
+  <input id="msg" placeholder="Type a song hint">
+  <button id="send">Show on audience screen</button>
+  <script>
+    document.getElementById('send').addEventListener('click', () => {
+      window.bingo.sendToAudience(document.getElementById('msg').value);
+    });
+  </script>
+</body>
+</html>
