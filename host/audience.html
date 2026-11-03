@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Audience</title></head>
+<body style="background:black;color:white;font-family:sans-serif">
+  <h1 id="text">Audience Screen</h1>
+  <script>
+    window.bingo.onAudienceText((text) => {
+      document.getElementById('text').textContent = text;
+    });
+  </script>
+</body>
+</html>
