@@ -5,12 +5,23 @@ let audienceWin: BrowserWindow | null = null;
 
 const webPreferences = { preload: path.join(__dirname, 'preload.js') };
 
-// Compiled code runs from dist/, but the HTML pages are still in host/
-const pagesDir = path.join(__dirname, '..', 'host');
+// While developing, the screens come from Vite (run "npm run dev" inside renderer/)
+const DEV_SERVER_URL = 'http://localhost:5173';
+
+// Open one of Hoang's screens: 'host' or 'audience'
+function loadScreen(win: BrowserWindow, screenName: 'host' | 'audience'): void {
+  if (app.isPackaged) {
+    // Finished app: load the built screens from renderer/dist
+    win.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'), { hash: `/${screenName}` });
+  } else {
+    // Development: load from the Vite dev server
+    win.loadURL(`${DEV_SERVER_URL}/#/${screenName}`);
+  }
+}
 
 function createHostWindow(): void {
-  const hostWin = new BrowserWindow({ width: 800, height: 600, title: 'Host', webPreferences });
-  hostWin.loadFile(path.join(pagesDir, 'host.html'));
+  const hostWin = new BrowserWindow({ width: 1280, height: 800, title: 'Host', webPreferences });
+  loadScreen(hostWin, 'host');
 }
 
 function createAudienceWindow(): void {
@@ -28,7 +39,7 @@ function createAudienceWindow(): void {
     audienceWin = new BrowserWindow({ width: 800, height: 600, x: 850, y: 50, title: 'Audience', webPreferences });
   }
 
-  audienceWin.loadFile(path.join(pagesDir, 'audience.html'));
+  loadScreen(audienceWin, 'audience');
   audienceWin.on('closed', () => { audienceWin = null; });
 }
 
