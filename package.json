@@ -2,7 +2,7 @@
   "name": "music-bingo",
   "version": "1.0.0",
   "description": "Music Bingo Host App",
-  "main": "Host/main.js",
+  "main": "host/main.js",
   "scripts": {
     "dev": "electron ."
   },
