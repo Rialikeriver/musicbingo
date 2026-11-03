@@ -1,0 +1,411 @@
+/* Rough skeleton styles. Plain CSS for now; swap for Tailwind if the team picks it. */
+
+:root {
+  --orange: #ff9f00;
+  --red: #ff1a00;
+  --green: #1e9e3e;
+  --border: #d0d0d0;
+  --bg: #f4f4f4;
+  --panel: #ffffff;
+  --text: #1a1a1a;
+  --muted: #666;
+  font-family: system-ui, 'Segoe UI', Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+h2 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---------- Dev nav ---------- */
+.dev-nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 12px;
+  background: #222;
+  color: #aaa;
+  font-size: 13px;
+}
+.dev-nav a {
+  color: #ddd;
+  text-decoration: none;
+  text-transform: capitalize;
+}
+.dev-nav a.active {
+  color: var(--orange);
+  font-weight: bold;
+}
+
+/* ---------- Shared ---------- */
+.btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn.green {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+.btn.red {
+  background: #d32f2f;
+  color: white;
+  border-color: #d32f2f;
+}
+.btn.big {
+  flex: 1;
+  padding: 14px;
+  font-size: 18px;
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Player card (phone) ---------- */
+.player {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 12px 16px 24px;
+}
+.sponsor-banner {
+  background: #222;
+  color: white;
+  text-align: center;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.player-header {
+  text-align: center;
+  margin: 12px 0;
+}
+.round-status {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  margin: 4px 0;
+}
+.pill {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ddd;
+}
+.pill.playing {
+  background: var(--green);
+  color: white;
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.cell {
+  aspect-ratio: 1;
+  font-size: 11px;
+  border: 1px solid #333;
+  background: white;
+  color: black;
+  padding: 2px;
+  cursor: pointer;
+}
+.cell.marked {
+  background: linear-gradient(135deg, var(--orange), var(--red));
+  color: white;
+}
+.cell.free {
+  font-weight: bold;
+}
+.bingo-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 16px;
+  font-size: 24px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  background: var(--green);
+  color: white;
+  cursor: pointer;
+}
+.result-msg {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+/* ---------- Host cockpit (laptop) ---------- */
+.host {
+  height: calc(100vh - 30px);
+  display: grid;
+  grid-template-rows: auto 1fr 260px;
+  gap: 8px;
+  padding: 8px;
+}
+.host-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.host-top select {
+  flex: 1;
+  min-width: 200px;
+  padding: 6px;
+  font-size: 16px;
+}
+.host-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.host-lists,
+.host-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-height: 0;
+}
+.host-bottom {
+  grid-template-columns: 2fr 1fr;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.song-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.song-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 4px;
+  color: white;
+  background: linear-gradient(90deg, var(--orange), var(--red));
+  cursor: pointer;
+}
+.song-row.selected {
+  outline: 3px solid #222;
+}
+.song-row.called {
+  background: #888;
+  cursor: default;
+}
+.song-title {
+  font-weight: bold;
+  font-size: 14px;
+}
+.song-meta {
+  font-size: 12px;
+  opacity: 0.9;
+}
+.move-btns {
+  display: flex;
+  gap: 4px;
+}
+.move-btns button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.move-btns button.red {
+  background: #d32f2f;
+  color: white;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.tabs button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: #eee;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+}
+.tabs button.active {
+  background: white;
+  font-weight: bold;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+  align-items: center;
+  font-size: 14px;
+  overflow-y: auto;
+}
+.form-grid .wide {
+  grid-column: 1 / -1;
+}
+.readouts {
+  display: flex;
+  gap: 12px;
+  font-family: monospace;
+}
+.claim {
+  margin-top: 4px;
+  padding: 6px;
+  background: #fff7e0;
+  border: 1px solid #f0d080;
+  border-radius: 4px;
+}
+.big-btns {
+  display: flex;
+  gap: 8px;
+}
+.preview-box {
+  flex: 1;
+  background: black;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  border-radius: 4px;
+}
+
+/* ---------- Audience screen (TV) ---------- */
+.audience {
+  height: calc(100vh - 30px);
+  background: black;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.dev-modes {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 1;
+}
+.dev-modes button {
+  background: #333;
+  color: #ccc;
+  border: 1px solid #555;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.dev-modes button.active {
+  color: var(--orange);
+}
+.aud-break {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr auto auto;
+  gap: 16px;
+  padding: 32px;
+}
+.logo-box,
+.video-box,
+.flip-card {
+  border: 2px dashed #555;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  color: #aaa;
+}
+.qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 22px;
+}
+.qr-placeholder {
+  width: 220px;
+  height: 220px;
+  background: white;
+  color: black;
+  display: grid;
+  place-items: center;
+  font-size: 48px;
+  font-weight: bold;
+}
+.aud-status {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 28px;
+}
+.sponsor-strip {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 12px;
+  background: #222;
+  font-size: 20px;
+}
+.aud-song {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.title-bar {
+  text-align: center;
+  font-size: 64px;
+  padding: 16px;
+  background: black;
+}
+.video-box {
+  flex: 1;
+  margin: 0 32px 32px;
+}
+.aud-check {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+.flip-card {
+  width: 400px;
+  height: 400px;
+}
