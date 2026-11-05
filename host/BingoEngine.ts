@@ -1,23 +1,40 @@
-import React from 'react';
-import { CustomPattern, WinningPattern } from '../types';
+// Defining all the verified winning pattern names
+export type WinningPattern =
+  | 'horizontal'
+  | 'vertical'
+  | 'diagonal'
+  | 'corners'     // 4 corners
+  | 'L'           // L shape
+  | 'blackout'    // Full card
+  | 'plus'        // + sign in the middle
+  | 'cross'       // X sign
+  | 'custom'      // Custom pattern made by host
 
+  // Structure for a custom pattern made by host
+  export interface CustomPattern {
+    name: string;         // Unique names of the custom pattern
+    grid: boolean[][];    // 2D grid showing which squares should be marked
+  }
+
+  // Structure for a single square on the card
 export interface BingoCardSquare {
   id: string;
   songTitle: string;
   artist: string;
   album: string;
   displayValue: string;     // Display for title, artist, album, or scrambled
-  isMarked: boolean;
-  isFreeSpace: boolean;
+  isMarked: boolean;        // True if player marked the square
+  isFreeSpace: boolean;     // True if it's the middle free space
 }
 
+// Structure for a full bingo card
 export interface BingoCard {
   cardId: string;               // Unique card id
   grid: BingoCardSquare[][];    // Bingo card grid (5x5)
   markedGrid: boolean[][];      // Bingo card marked grid
 }
 
-//hi 
+// Visual style preferences for fonts, sizes, colors
 export interface CardStylePreferences {
   fontFamily: string;       // Font style
   fontSize: number;         // Font size
@@ -27,13 +44,13 @@ export interface CardStylePreferences {
   accentColor: string;      // Accent color
 }
 
+// Options for what text appears on the card squares
 export type DisplayOption = 'song' | 'artist' | 'album';
 
+// Main engine class for all bingo verifications and calculations
 export class BingoEngine {
-  
-  /**
-   * Automatically calculates roof rounding to the nearest perfect square
-   */
+
+  // Calculates grid dimensions rounded up to the nearest square
   public static calculateCardMatrixSize(requestedCount: number): { rowsCols: number; totalCards: number } {
     const sqrt = Math.sqrt(requestedCount);
     const rowsCols = Math.ceil(sqrt);
@@ -41,44 +58,46 @@ export class BingoEngine {
     return { rowsCols, totalCards };
   }
 
+  // Builds a true/false pattern grid mask
   public static generatePatternMask(pattern: WinningPattern, size: number = 5, customGrid?: boolean[][]): boolean[][] {
     let grid: boolean[][] = Array(size).fill(false).map(() => Array(size).fill(false));
 
+    // Checks which pattern was chosen
     switch (pattern) {
-      case 'vertical':    // Vertical pattern
+      case 'vertical': // Vertical pattern
         for (let r = 0; r < size; r++) grid[r][Math.floor(size / 2)] = true;
         break;
-      case 'L':           // L pattern
+      case 'L': // L pattern
         for (let r = 0; r < size; r++) grid[r][0] = true;
         for (let c = 0; c < size; c++) grid[size - 1][c] = true;
         break;
-      case 'custom':      // Custom pattern chosen by host
+      case 'custom': // Custom pattern chosen by host
         if (customGrid) return customGrid;
         break;
-      case 'horizontal':  // Horizontal pattern
+      case 'horizontal': // Horizontal pattern
         for (let c = 0; c < size; c++) grid[Math.floor(size / 2)][c] = true;
         break;
-      case 'diagonal':    // Diagonal pattern
+      case 'diagonal': // Diagonal pattern
         for (let i = 0; i < size; i++) {
           grid[i][i] = true;
           grid[i][size - 1 - i] = true;
         }
         break;
-      case 'corners':     // Corner patterns
+      case 'corners': // Corner patterns
         grid[0][0] = true;
         grid[0][size - 1] = true;
         grid[size - 1][0] = true;
         grid[size - 1][size - 1] = true;
         break;
-      case 'blackout':    // Full house pattern
+      case 'blackout': // Full house pattern
         for (let r = 0; r < size; r++) {
           for (let c = 0; c < size; c++) {
             grid[r][c] = true;
           }
         }
         break;
-      case 'plus':        // + pattern
-      case 'cross':       // X pattern
+      case 'plus': // + pattern
+      case 'cross': // X pattern
         for (let i = 0; i < size; i++) {
           grid[Math.floor(size / 2)][i] = true;
           grid[i][Math.floor(size / 2)] = true;
@@ -88,6 +107,7 @@ export class BingoEngine {
     return grid;
   }
 
+  // Compares the player's marked squares against a pattern mask
   public static validateBingo(markedGrid: boolean[][], patternMask: boolean[][]): boolean {
     for (let r = 0; r < markedGrid.length; r++) {
       for (let c = 0; c < markedGrid[r].length; c++) {
@@ -96,7 +116,7 @@ export class BingoEngine {
         }
       }
     }
-    return true;
+    return true;      // Required pattern squares were marked
   }
 
   // HOST PATTERN VERIFICATION
@@ -118,14 +138,10 @@ export class BingoEngine {
     if (selectedPattern === 'horizontal') {
       for (let r = 0; r < size; r++) {
         if (markedGrid[r].every(val => val)) {
-          return {
-            isWin: true, winningPattern: 'horizontal'
-          };
+          return { isWin: true, winningPattern: 'horizontal' };
         }
       }
-      return {
-        isWin: false, winningPattern: 'horizontal'
-      };
+      return { isWin: false, winningPattern: 'horizontal' };
     }
 
     // If host selected vertical, check if ANY vertical column is completely filled
@@ -139,22 +155,16 @@ export class BingoEngine {
           }
         }
         if (fullCol) {
-          return {
-            isWin: true, winningPattern: 'vertical'
-          };
+          return { isWin: true, winningPattern: 'vertical' };
         }
       }
-      return {
-        isWin: false, winningPattern: 'vertical'
-      };
+      return { isWin: false, winningPattern: 'vertical' };
     }
 
     // For fixed shape patterns (corners, L, blackout, plus, diagonal, custom)
     const mask = this.generatePatternMask(selectedPattern as WinningPattern, size, customMask);
     const isWin = this.validateBingo(markedGrid, mask);
-    return {
-      isWin, winningPattern: selectedPattern
-    };
+    return { isWin, winningPattern: selectedPattern };
   }
 
   // Helper verifying if any single row, column or diagonal is filled
@@ -163,8 +173,7 @@ export class BingoEngine {
 
     // Horizontal rows
     for (let r = 0; r < size; r++) {
-      if (markedGrid[r].every(val => val))
-        return true;
+      if (markedGrid[r].every(val => val)) return true;
     }
 
     // Vertical columns
@@ -176,8 +185,7 @@ export class BingoEngine {
           break;
         }
       }
-      if (fullCol)
-        return true;
+      if (fullCol) return true;
     }
 
     // Diagonal 1 (\)
@@ -188,8 +196,7 @@ export class BingoEngine {
         break;
       }
     }
-    if (diag1)
-      return true;
+    if (diag1) return true;
 
     // Diagonal 2 (/)
     let diag2 = true;
@@ -199,8 +206,7 @@ export class BingoEngine {
         break;
       }
     }
-    if (diag2)
-      return true;
+    if (diag2) return true;
 
     return false;
   }
@@ -223,9 +229,7 @@ export class BingoEngine {
   // CARD GENERATOR & DISPLAY OPTIONS
   // Resolves the display text based on host settings
   public static resolveSquareDisplayValue(
-    item: {
-      title: string; artist: string; album?: string
-    },
+    item: { title: string; artist: string; album?: string },
     displayOption: DisplayOption
   ): string {
     switch (displayOption) {
@@ -325,8 +329,8 @@ export class BingoEngine {
     };
   }
 
-  // Converts the style configuration into a CSS style
-  public static getGridContainerStyle(style: CardStylePreferences): React.CSSProperties {
+  // Converts the style configuration into a CSS-compatible style dictionary without requiring React imports
+  public static getGridContainerStyle(style: CardStylePreferences): Record<string, string | number> {
     return {
       fontFamily: style.fontFamily,
       fontSize: `${style.fontSize}px`,
@@ -336,7 +340,7 @@ export class BingoEngine {
   }
 
   // Returns cell-specific CSS styles for marked and unmarked squares
-  public static getSquareStyle(isMarked: boolean, style: CardStylePreferences): React.CSSProperties {
+  public static getSquareStyle(isMarked: boolean, style: CardStylePreferences): Record<string, string | number> {
     return {
       color: style.fontColor,
       backgroundColor: isMarked ? style.markedColor : 'transparent',
