@@ -8,15 +8,15 @@ export type WinningPattern =
   | 'blackout'    // Full card
   | 'plus'        // + sign in the middle
   | 'cross'       // X sign
-  | 'custom'      // Custom pattern made by host
+  | 'custom';     // Custom pattern made by host
 
-  // Structure for a custom pattern made by host
-  export interface CustomPattern {
-    name: string;         // Unique names of the custom pattern
-    grid: boolean[][];    // 2D grid showing which squares should be marked
-  }
+// Structure for a custom pattern made by host
+export interface CustomPattern {
+  name: string;         // Unique names of the custom pattern
+  grid: boolean[][];    // 2D grid showing which squares should be marked
+}
 
-  // Structure for a single square on the card
+// Structure for a single square on the card
 export interface BingoCardSquare {
   id: string;
   songTitle: string;
