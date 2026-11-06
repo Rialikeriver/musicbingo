@@ -11,6 +11,7 @@ function makeTrack(id: string, filePath: string): Track {
     album: 'Album',
     filePath,
     startTime: 0,
+    endTime: 200,
     duration: 200,
   };
 }
@@ -42,5 +43,12 @@ assert.strictEqual(lookup.getAddress('t1'), 'C:/music/one.mp3');
 assert.strictEqual(lookup.remove('t1'), true);
 assert.strictEqual(lookup.remove('t1'), false);
 assert.strictEqual(lookup.size(), 0);
+
+// all() returns every stored track
+lookup.add(makeTrack('a', 'a.mp3'));
+lookup.add(makeTrack('b', 'b.mp3'));
+assert.deepStrictEqual(lookup.all().map(t => t.id), ['a', 'b']);
+lookup.remove('a');
+lookup.remove('b');
 
 console.log('DataLookup: all tests passed');

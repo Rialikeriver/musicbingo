@@ -37,4 +37,9 @@ export class DataLookup {
   public size(): number {
     return this.tracks.size;
   }
+
+  // Every stored track, in the order they were added.
+  public all(): Track[] {
+    return Array.from(this.tracks.values());
+  }
 }
