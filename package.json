@@ -2,15 +2,16 @@
   "name": "music-bingo",
   "version": "1.0.0",
   "description": "Music Bingo Host App",
-  "main": "host/main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "electron ."
+    "dev": "tsc && electron ."
   },
   "dependencies": {
     "express": "^4.19.2",
     "socket.io": "^4.7.5"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "electron": "^30.0.0",
     "typescript": "^5.4.5"
   },
