@@ -1,5 +1,7 @@
 import { app, BrowserWindow, screen, ipcMain } from 'electron';
 import path from 'path';
+import { CatalogStore } from './CatalogStore';
+import { registerCatalogHandlers } from './catalogIpc';
 
 let audienceWin: BrowserWindow | null = null;
 
@@ -49,6 +51,11 @@ ipcMain.on('audience-text', (_event, text: string) => {
 });
 
 app.whenReady().then(() => {
+  // Load the saved song catalog and let the import screen talk to it
+  const catalog = new CatalogStore(path.join(app.getPath('userData'), 'catalog.json'));
+  catalog.load();
+  registerCatalogHandlers(ipcMain, catalog);
+
   createHostWindow();
   createAudienceWindow();
 });

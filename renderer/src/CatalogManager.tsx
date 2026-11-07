@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Track } from '../../host/index';
 import { TrackCropperModal } from './TrackCropperModal';
 
@@ -6,6 +6,11 @@ export const CatalogManager: React.FC = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Show the saved catalog when the screen opens (only inside the Electron app)
+  useEffect(() => {
+    window.catalogApi?.list().then(saved => setTracks(saved));
+  }, []);
 
   // Read video/audio duration via an in-memory browser element
   const getFileDuration = (file: File): Promise<number> => {
@@ -27,28 +32,35 @@ export const CatalogManager: React.FC = () => {
       /\.(mp3|mp4|wav|ogg|m4a)$/i.test(file.name)
     );
 
-    const parsedTracks: Track[] = await Promise.all(
-      validFiles.map(async (file, index) => {
-        const duration = await getFileDuration(file);
-        const previewUrl = URL.createObjectURL(file); // Generates browser-safe blob URL for playback
-        const filePath = (file as any).path || file.name;
-        const cleanTitle = file.name.replace(/\.[^/.]+$/, '');
+    const added: Track[] = [];
+    for (const file of validFiles) {
+      const duration = await getFileDuration(file);
+      const previewUrl = URL.createObjectURL(file); // Browser-safe blob URL for playback
+      const filePath = (file as any).path || file.name;
 
-        return {
-          id: `${Date.now()}-${index}-${Math.random()}`,
+      if (window.catalogApi) {
+        // Inside Electron: the host reads the artist and title, gives the song a stable id,
+        // and saves it. Returns null if this file is already in the catalog.
+        const saved = await window.catalogApi.importFile(filePath, duration);
+        if (saved) added.push({ ...saved, previewUrl });
+      } else {
+        // Plain browser preview (no host): keep the old behaviour
+        const cleanTitle = file.name.replace(/\.[^/.]+$/, '');
+        added.push({
+          id: `${Date.now()}-${Math.random()}`,
           title: cleanTitle,
           artist: 'Unknown Artist',
           album: 'Unknown Album',
-          filePath: filePath,
-          previewUrl: previewUrl,
+          filePath,
+          previewUrl,
           startTime: 0,
           endTime: duration || 30,
           duration: duration || 30,
-        };
-      })
-    );
+        });
+      }
+    }
 
-    setTracks(prev => [...prev, ...parsedTracks]);
+    setTracks(prev => [...prev, ...added]);
   };
 
   const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -68,12 +80,23 @@ export const CatalogManager: React.FC = () => {
     }
   };
 
-  const handleSaveCrop = (updatedTrack: Track) => {
-    setTracks(prev => prev.map(t => t.id === updatedTrack.id ? updatedTrack : t));
+  const handleSaveCrop = async (updatedTrack: Track) => {
+    let saved = updatedTrack;
+    if (window.catalogApi) {
+      // Save the new crop to the host so it survives a restart
+      const result = await window.catalogApi.updateCrop(
+        updatedTrack.id, updatedTrack.startTime, updatedTrack.endTime
+      );
+      if (result) saved = { ...updatedTrack, startTime: result.startTime, endTime: result.endTime };
+    }
+    setTracks(prev => prev.map(t => t.id === saved.id ? saved : t));
     setEditingTrack(null);
   };
 
-  const removeTrack = (id: string) => {
+  const removeTrack = async (id: string) => {
+    if (window.catalogApi) {
+      await window.catalogApi.remove(id);
+    }
     setTracks(prev => prev.filter(t => t.id !== id));
   };
 
@@ -124,7 +147,7 @@ export const CatalogManager: React.FC = () => {
                 <div>
                   <div className="song-title">{track.title}</div>
                   <div className="song-meta">
-                    Crop: {track.startTime}s - {track.endTime}s | Total: {track.duration}s
+                    {track.artist} | Crop: {track.startTime}s - {track.endTime}s | Total: {track.duration}s
                   </div>
                 </div>
                 <div className="move-btns">
