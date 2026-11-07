@@ -51,4 +51,14 @@ assert.deepStrictEqual(lookup.all().map(t => t.id), ['a', 'b']);
 lookup.remove('a');
 lookup.remove('b');
 
+// update() replaces a stored track and keeps its place; unknown ids return false
+lookup.add(makeTrack('x', 'x.mp3'));
+lookup.add(makeTrack('y', 'y.mp3'));
+assert.strictEqual(lookup.update({ ...makeTrack('x', 'x.mp3'), title: 'New' }), true);
+assert.strictEqual(lookup.getTrack('x')!.title, 'New');
+assert.deepStrictEqual(lookup.all().map(t => t.id), ['x', 'y']);
+assert.strictEqual(lookup.update(makeTrack('nope', 'n.mp3')), false);
+lookup.remove('x');
+lookup.remove('y');
+
 console.log('DataLookup: all tests passed');

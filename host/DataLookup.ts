@@ -42,4 +42,12 @@ export class DataLookup {
   public all(): Track[] {
     return Array.from(this.tracks.values());
   }
+
+  // Replace a stored track with a new version of it (same id).
+  // Keeps the track's place in the list. Returns false if the id is not stored.
+  public update(track: Track): boolean {
+    if (!this.tracks.has(track.id)) return false;
+    this.tracks.set(track.id, track);
+    return true;
+  }
 }
