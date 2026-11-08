@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { rounds, songs } from '../data/fakeData';
 import { CatalogManager } from '../CatalogManager';
+import { ControlPanel } from '../ControlPanel';
 
 // Host's laptop screen: the "cockpit" from the legacy walkthrough.
 export default function HostCockpit() {
@@ -8,8 +9,7 @@ export default function HostCockpit() {
   const called = songs.slice(0, 3);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<'timers' | 'bingo'>('timers');
-  const [activeView, setActiveView] = useState<'dashboard' | 'catalog'>('dashboard');
-
+  const [activeView, setActiveView] = useState<'dashboard' | 'catalog' | 'controlPanel'>('dashboard');
   return (
     <div className="host">
       {/* Top bar */}
@@ -31,13 +31,22 @@ export default function HostCockpit() {
           {activeView === 'catalog' ? '← Back to Cockpit' : 'Create/Edit Catalog'}
         </button>
           <button className="btn">Text Preferences</button>
-          <button className="btn">Control Panel</button>
+          <button
+            className={`btn ${activeView === 'controlPanel' ? 'green' : ''}`}
+            onClick={() => setActiveView(activeView === 'controlPanel' ? 'dashboard' : 'controlPanel')}
+          >
+            {activeView === 'controlPanel' ? '← Back to Cockpit' : 'Control Panel'}
+          </button>
         </div>
       </header>
 
       {activeView === 'catalog' ? (
         <main style={{ padding: '16px', overflowY: 'auto' }}>
           <CatalogManager />
+        </main>
+      ) : activeView === 'controlPanel' ? (
+        <main style={{ padding: '16px', overflowY: 'auto', gridRow: '2 / 4' }}>
+          <ControlPanel />
         </main>
       ) : (
         <>
