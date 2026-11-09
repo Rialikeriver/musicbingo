@@ -26,3 +26,22 @@ export interface CustomPattern {
   name: string;
   grid: boolean[][];
 }
+
+
+// Control Panel settings (owned by the Control Panel / Task 3)
+export interface ControlPanelSettings {
+  media: {
+    winnerVideo: string | null;
+    winnerAudio: string | null;
+    backgroundMusic: string | null;
+  };
+  branding: {
+    venueLogo: string | null;
+    sponsorBanners: string[];
+    bannerIntervalSeconds: number;
+  };
+  display: {
+    audienceDisplayId: number | null;
+    fullscreen: boolean;
+  };
+}

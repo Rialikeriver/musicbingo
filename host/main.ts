@@ -1,5 +1,6 @@
 import { app, BrowserWindow, screen, ipcMain } from 'electron';
 import path from 'path';
+import { loadSettings } from './settings';
 
 let audienceWin: BrowserWindow | null = null;
 
@@ -47,6 +48,9 @@ function createAudienceWindow(): void {
 ipcMain.on('audience-text', (_event, text: string) => {
   audienceWin?.webContents.send('audience-text', text);
 });
+
+// When a screen asks for the settings, read them from the settings file
+ipcMain.handle('settings:get', () => loadSettings());
 
 app.whenReady().then(() => {
   createHostWindow();
