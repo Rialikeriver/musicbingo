@@ -1,5 +1,5 @@
 // Control Panel: where the host sets up media, branding and the TV screen.
-// Step 3: the venue logo can be chosen. The other buttons get connected in Step 4.
+// Step 4a: logo, winner video, winner audio and background music can be chosen.
 import { useEffect, useState } from 'react';
 import type { ControlPanelSettings, MediaSettingKey } from '../../host/index';
 
@@ -50,9 +50,9 @@ export function ControlPanel() {
 
       <section className="panel">
         <h3>Media</h3>
-        <SettingRow label="Winner video" value={fileName(settings.media.winnerVideo)} />
-        <SettingRow label="Winner audio" value={fileName(settings.media.winnerAudio)} />
-        <SettingRow label="Background music" value={fileName(settings.media.backgroundMusic)} />
+        <SettingRow label="Winner video" value={fileName(settings.media.winnerVideo)} onChoose={() => choose('winnerVideo')} />
+        <SettingRow label="Winner audio" value={fileName(settings.media.winnerAudio)} onChoose={() => choose('winnerAudio')} />
+        <SettingRow label="Background music" value={fileName(settings.media.backgroundMusic)} onChoose={() => choose('backgroundMusic')} />
       </section>
 
       <section className="panel">
