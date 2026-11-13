@@ -1,7 +1,7 @@
 import { app, BrowserWindow, screen, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { loadSettings, saveSettings } from './settings';
-import type { ControlPanelOptions } from './index';
+import type { ControlPanelOptions, ControlPanelSettings } from './index';
 import {
   FILE_FILTERS, isMediaSettingKey, copyIntoMediaFolder,
   removeOldCopy, getMediaSetting, setMediaSetting,
@@ -57,6 +57,14 @@ function createAudienceWindow(): void {
   audienceWin.on('closed', () => { audienceWin = null; });
 }
 
+// Save the settings, then tell every window about them (so the TV updates right away)
+function saveAndShare(newSettings: ControlPanelSettings): void {
+  saveSettings(newSettings);
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('settings:changed', newSettings);
+  }
+}
+
 // When the host sends text, pass it to the audience window
 ipcMain.on('audience-text', (_event, text: string) => {
   audienceWin?.webContents.send('audience-text', text);
@@ -83,7 +91,7 @@ ipcMain.handle('settings:chooseFile', async (event, key: unknown) => {
   const oldCopy = getMediaSetting(settings, key);
   const newCopy = copyIntoMediaFolder(result.filePaths[0], key);
   setMediaSetting(settings, key, newCopy);
-  saveSettings(settings);
+  saveAndShare(settings);
   removeOldCopy(oldCopy);
   return settings;
 });
@@ -104,7 +112,7 @@ ipcMain.handle('settings:addBanners', async (event) => {
   for (const filePath of result.filePaths) {
     settings.branding.sponsorBanners.push(copyIntoMediaFolder(filePath, 'banner'));
   }
-  saveSettings(settings);
+  saveAndShare(settings);
   return settings;
 });
 
@@ -116,7 +124,7 @@ ipcMain.handle('settings:removeBanner', (_event, bannerPath: unknown) => {
     return settings;
   }
   settings.branding.sponsorBanners = settings.branding.sponsorBanners.filter(p => p !== bannerPath);
-  saveSettings(settings);
+  saveAndShare(settings);
   removeOldCopy(bannerPath);
   return settings;
 });
@@ -141,7 +149,7 @@ ipcMain.handle('settings:updateOptions', (_event, changes: ControlPanelOptions) 
     if (audienceWin && audienceOnExternalScreen) audienceWin.setFullScreen(fullscreen);
   }
 
-  saveSettings(settings);
+  saveAndShare(settings);
   return settings;
 });
 

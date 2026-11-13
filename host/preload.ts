@@ -9,5 +9,11 @@ contextBridge.exposeInMainWorld('bingo', {
   chooseFile: (key: string) => ipcRenderer.invoke('settings:chooseFile', key),
   addBanners: () => ipcRenderer.invoke('settings:addBanners'),
   removeBanner: (bannerPath: string) => ipcRenderer.invoke('settings:removeBanner', bannerPath),
-  updateOptions: (changes: object) => ipcRenderer.invoke('settings:updateOptions', changes)
+  updateOptions: (changes: object) => ipcRenderer.invoke('settings:updateOptions', changes),
+  // Run "callback" every time the settings change; returns a function that stops listening
+  onSettingsChanged: (callback: (settings: unknown) => void) => {
+    const listener = (_event: unknown, settings: unknown) => callback(settings);
+    ipcRenderer.on('settings:changed', listener);
+    return () => { ipcRenderer.removeListener('settings:changed', listener); };
+  }
 });

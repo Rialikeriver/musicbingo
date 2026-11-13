@@ -2,17 +2,7 @@
 // Step 5: media, logo, banners, seconds per banner and full screen can all be changed and saved.
 import { useEffect, useState } from 'react';
 import type { ControlPanelSettings, MediaSettingKey } from '../../host/index';
-
-// Show just the file name from a full path, or "Not chosen"
-function fileName(filePath: string | null): string {
-  if (!filePath) return 'Not chosen';
-  return filePath.split(/[\\/]/).pop() ?? filePath;
-}
-
-// The address a screen uses to show a file from the app's media folder
-function mediaUrl(filePath: string): string {
-  return `media://files/${encodeURIComponent(fileName(filePath))}`;
-}
+import { fileName, mediaUrl } from './media';
 
 // A small picture preview
 function Thumbnail({ filePath }: { filePath: string }) {

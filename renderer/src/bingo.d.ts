@@ -12,6 +12,7 @@ declare global {
       addBanners: () => Promise<ControlPanelSettings>;
       removeBanner: (bannerPath: string) => Promise<ControlPanelSettings>;
       updateOptions: (changes: ControlPanelOptions) => Promise<ControlPanelSettings>;
+      onSettingsChanged: (callback: (settings: ControlPanelSettings) => void) => () => void;
     };
   }
 }
