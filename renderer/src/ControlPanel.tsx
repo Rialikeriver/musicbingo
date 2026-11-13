@@ -1,7 +1,7 @@
 // Control Panel: where the host sets up media, branding and the TV screen.
-// Step 2: shows the real saved settings. The buttons get connected in the next steps.
+// Step 3: the venue logo can be chosen. The other buttons get connected in Step 4.
 import { useEffect, useState } from 'react';
-import type { ControlPanelSettings } from '../../host/index';
+import type { ControlPanelSettings, MediaSettingKey } from '../../host/index';
 
 // Show just the file name from a full path, or "Not chosen"
 function fileName(filePath: string | null): string {
@@ -10,12 +10,13 @@ function fileName(filePath: string | null): string {
 }
 
 // One row: a label, what is chosen now, and a button
-function SettingRow({ label, value }: { label: string; value: string }) {
+// The button only works when onChoose is given (other rows get connected in Step 4)
+function SettingRow({ label, value, onChoose }: { label: string; value: string; onChoose?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
       <span style={{ width: '180px', fontWeight: 'bold' }}>{label}</span>
       <span className="muted" style={{ flex: 1 }}>{value}</span>
-      <button className="btn">Choose file…</button>
+      <button className="btn" onClick={onChoose} disabled={!onChoose}>Choose file…</button>
     </div>
   );
 }
@@ -38,6 +39,11 @@ export function ControlPanel() {
 
   const banners = settings.branding.sponsorBanners;
 
+  // Open the file picker for one setting, then show the updated settings
+  const choose = (key: MediaSettingKey) => {
+    window.bingo?.chooseFile(key).then(setSettings);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <h2>Control Panel</h2>
@@ -51,13 +57,13 @@ export function ControlPanel() {
 
       <section className="panel">
         <h3>Branding</h3>
-        <SettingRow label="Venue logo" value={fileName(settings.branding.venueLogo)} />
+        <SettingRow label="Venue logo" value={fileName(settings.branding.venueLogo)} onChoose={() => choose('venueLogo')} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
           <span style={{ width: '180px', fontWeight: 'bold' }}>Sponsor banners</span>
           <span className="muted" style={{ flex: 1 }}>
             {banners.length === 0 ? 'No banners yet' : banners.map(fileName).join(', ')}
           </span>
-          <button className="btn">Add banner…</button>
+          <button className="btn" disabled>Add banner…</button>
         </div>
         <label style={{ padding: '6px 0' }}>
           <span style={{ display: 'inline-block', width: '180px', fontWeight: 'bold' }}>Seconds per banner</span>

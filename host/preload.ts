@@ -5,5 +5,6 @@ contextBridge.exposeInMainWorld('bingo', {
   sendToAudience: (text: string) => ipcRenderer.send('audience-text', text),
   onAudienceText: (callback: (text: string) => void) =>
     ipcRenderer.on('audience-text', (_event, text: string) => callback(text)),
-  getSettings: () => ipcRenderer.invoke('settings:get')
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  chooseFile: (key: string) => ipcRenderer.invoke('settings:chooseFile', key)
 });

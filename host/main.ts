@@ -1,6 +1,10 @@
-import { app, BrowserWindow, screen, ipcMain } from 'electron';
+import { app, BrowserWindow, screen, ipcMain, dialog } from 'electron';
 import path from 'path';
-import { loadSettings } from './settings';
+import { loadSettings, saveSettings } from './settings';
+import {
+  FILE_FILTERS, isMediaSettingKey, copyIntoMediaFolder,
+  removeOldCopy, getMediaSetting, setMediaSetting
+} from './mediaFiles';
 
 let audienceWin: BrowserWindow | null = null;
 
@@ -51,6 +55,29 @@ ipcMain.on('audience-text', (_event, text: string) => {
 
 // When a screen asks for the settings, read them from the settings file
 ipcMain.handle('settings:get', () => loadSettings());
+
+// "Choose file…": open the file picker, copy the file into the app, save it in settings
+ipcMain.handle('settings:chooseFile', async (event, key: unknown) => {
+  if (!isMediaSettingKey(key)) throw new Error(`Unknown setting: ${String(key)}`);
+
+  const options: Electron.OpenDialogOptions = {
+    title: 'Choose a file',
+    properties: ['openFile'],
+    filters: FILE_FILTERS[key]
+  };
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+
+  const settings = loadSettings();
+  if (result.canceled || result.filePaths.length === 0) return settings; // host pressed Cancel
+
+  const oldCopy = getMediaSetting(settings, key);
+  const newCopy = copyIntoMediaFolder(result.filePaths[0], key);
+  setMediaSetting(settings, key, newCopy);
+  saveSettings(settings);
+  removeOldCopy(oldCopy);
+  return settings;
+});
 
 app.whenReady().then(() => {
   createHostWindow();

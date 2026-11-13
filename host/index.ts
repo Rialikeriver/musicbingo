@@ -45,3 +45,7 @@ export interface ControlPanelSettings {
     fullscreen: boolean;
   };
 }
+
+
+// The Control Panel settings that hold one chosen file
+export type MediaSettingKey = 'venueLogo' | 'winnerVideo' | 'winnerAudio' | 'backgroundMusic';
