@@ -1,7 +1,8 @@
-import { app } from 'electron';
+import { app, protocol, net } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { pathToFileURL } from 'url';
 import type { ControlPanelSettings, MediaSettingKey } from './index';
 
 // Which file types the picker allows for each setting
@@ -48,4 +49,27 @@ export function getMediaSetting(settings: ControlPanelSettings, key: MediaSettin
 export function setMediaSetting(settings: ControlPanelSettings, key: MediaSettingKey, value: string | null): void {
   if (key === 'venueLogo') settings.branding.venueLogo = value;
   else settings.media[key] = value;
+}
+
+
+// media:// addresses, so screens can show files from the media folder
+
+// Step 1 (before the app is ready): tell Electron "media://" is a safe address type
+export function registerMediaScheme(): void {
+  protocol.registerSchemesAsPrivileged([
+    { scheme: 'media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
+  ]);
+}
+
+// Step 2 (after the app is ready): answer requests like media://files/banner-123.png
+export function handleMediaRequests(): void {
+  protocol.handle('media', (request) => {
+    const requested = decodeURIComponent(new URL(request.url).pathname);
+    const name = path.basename(requested);          // drop any folders, e.g. "../../"
+    const filePath = path.join(mediaFolder(), name); // only ever look inside the media folder
+    if (!name || !fs.existsSync(filePath)) {
+      return new Response('Not found', { status: 404 });
+    }
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
 }

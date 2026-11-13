@@ -4,8 +4,13 @@ import { loadSettings, saveSettings } from './settings';
 import type { ControlPanelOptions } from './index';
 import {
   FILE_FILTERS, isMediaSettingKey, copyIntoMediaFolder,
-  removeOldCopy, getMediaSetting, setMediaSetting
+  removeOldCopy, getMediaSetting, setMediaSetting,
+  registerMediaScheme, handleMediaRequests
 } from './mediaFiles';
+
+
+// Must happen before the app is ready
+registerMediaScheme();
 
 let audienceWin: BrowserWindow | null = null;
 let audienceOnExternalScreen = false; // true when the TV window is on a second screen
@@ -141,6 +146,7 @@ ipcMain.handle('settings:updateOptions', (_event, changes: ControlPanelOptions) 
 });
 
 app.whenReady().then(() => {
+  handleMediaRequests();
   createHostWindow();
   createAudienceWindow();
 });

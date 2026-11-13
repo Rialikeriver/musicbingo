@@ -9,12 +9,29 @@ function fileName(filePath: string | null): string {
   return filePath.split(/[\\/]/).pop() ?? filePath;
 }
 
+// The address a screen uses to show a file from the app's media folder
+function mediaUrl(filePath: string): string {
+  return `media://files/${encodeURIComponent(fileName(filePath))}`;
+}
+
+// A small picture preview
+function Thumbnail({ filePath }: { filePath: string }) {
+  return (
+    <img
+      src={mediaUrl(filePath)}
+      alt=""
+      style={{ width: '96px', height: '54px', objectFit: 'contain', background: '#222', borderRadius: '4px' }}
+    />
+  );
+}
+
 // One row: a label, what is chosen now, and a button
 // The button only works when onChoose is given (other rows get connected in Step 4)
-function SettingRow({ label, value, onChoose }: { label: string; value: string; onChoose?: () => void }) {
-  return (
+function SettingRow({ label, value, onChoose, preview }: { label: string; value: string; onChoose?: () => void; preview?: string | null }) {
+return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
       <span style={{ width: '180px', fontWeight: 'bold' }}>{label}</span>
+        {preview && <Thumbnail filePath={preview} />}
       <span className="muted" style={{ flex: 1 }}>{value}</span>
       <button className="btn" onClick={onChoose} disabled={!onChoose}>Choose file…</button>
     </div>
@@ -78,9 +95,8 @@ export function ControlPanel() {
 
       <section className="panel">
         <h3>Branding</h3>
-        <SettingRow label="Venue logo" value={fileName(settings.branding.venueLogo)} onChoose={() => choose('venueLogo')} />
-        
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '6px 0' }}>
+        <SettingRow label="Venue logo" value={fileName(settings.branding.venueLogo)} onChoose={() => choose('venueLogo')} preview={settings.branding.venueLogo} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '6px 0' }}>
           <span style={{ width: '180px', fontWeight: 'bold' }}>Sponsor banners</span>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {banners.length === 0 ? (
@@ -88,6 +104,7 @@ export function ControlPanel() {
             ) : (
               banners.map((banner) => (
                 <div key={banner} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Thumbnail filePath={banner} />
                   <span className="muted" style={{ flex: 1 }}>{fileName(banner)}</span>
                   <button className="btn" onClick={() => window.bingo?.removeBanner(banner).then(setSettings)}>
                     Remove
