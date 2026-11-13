@@ -49,3 +49,10 @@ export interface ControlPanelSettings {
 
 // The Control Panel settings that hold one chosen file
 export type MediaSettingKey = 'venueLogo' | 'winnerVideo' | 'winnerAudio' | 'backgroundMusic';
+
+
+// The simple Control Panel options that can be changed by typing or ticking
+export interface ControlPanelOptions {
+  bannerIntervalSeconds?: number;
+  fullscreen?: boolean;
+}

@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('bingo', {
   getSettings: () => ipcRenderer.invoke('settings:get'),
   chooseFile: (key: string) => ipcRenderer.invoke('settings:chooseFile', key),
   addBanners: () => ipcRenderer.invoke('settings:addBanners'),
-  removeBanner: (bannerPath: string) => ipcRenderer.invoke('settings:removeBanner', bannerPath)
+  removeBanner: (bannerPath: string) => ipcRenderer.invoke('settings:removeBanner', bannerPath),
+  updateOptions: (changes: object) => ipcRenderer.invoke('settings:updateOptions', changes)
 });

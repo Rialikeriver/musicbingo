@@ -1,12 +1,14 @@
 import { app, BrowserWindow, screen, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { loadSettings, saveSettings } from './settings';
+import type { ControlPanelOptions } from './index';
 import {
   FILE_FILTERS, isMediaSettingKey, copyIntoMediaFolder,
   removeOldCopy, getMediaSetting, setMediaSetting
 } from './mediaFiles';
 
 let audienceWin: BrowserWindow | null = null;
+let audienceOnExternalScreen = false; // true when the TV window is on a second screen
 
 const webPreferences = { preload: path.join(__dirname, 'preload.js') };
 
@@ -39,9 +41,11 @@ function createAudienceWindow(): void {
   if (external) {
     const { x, y, width, height } = external.bounds;
     audienceWin = new BrowserWindow({ x, y, width, height, title: 'Audience', webPreferences });
-    audienceWin.setFullScreen(true);
+    audienceOnExternalScreen = true;
+    audienceWin.setFullScreen(loadSettings().display.fullscreen);
   } else {
     audienceWin = new BrowserWindow({ width: 800, height: 600, x: 850, y: 50, title: 'Audience', webPreferences });
+    audienceOnExternalScreen = false;  
   }
 
   loadScreen(audienceWin, 'audience');
@@ -109,6 +113,30 @@ ipcMain.handle('settings:removeBanner', (_event, bannerPath: unknown) => {
   settings.branding.sponsorBanners = settings.branding.sponsorBanners.filter(p => p !== bannerPath);
   saveSettings(settings);
   removeOldCopy(bannerPath);
+  return settings;
+});
+
+// Typing "Seconds per banner" or ticking "Full screen": check the values, then save them
+ipcMain.handle('settings:updateOptions', (_event, changes: ControlPanelOptions) => {
+  const settings = loadSettings();
+
+  const seconds = changes?.bannerIntervalSeconds;
+  if (seconds !== undefined) {
+    if (!Number.isInteger(seconds) || seconds < 3 || seconds > 120) {
+      throw new Error('Seconds per banner must be a whole number from 3 to 120');
+    }
+    settings.branding.bannerIntervalSeconds = seconds;
+  }
+
+  const fullscreen = changes?.fullscreen;
+  if (fullscreen !== undefined) {
+    if (typeof fullscreen !== 'boolean') throw new Error('Full screen must be true or false');
+    settings.display.fullscreen = fullscreen;
+    // Apply it now, but only on a second screen (never cover the host's own laptop)
+    if (audienceWin && audienceOnExternalScreen) audienceWin.setFullScreen(fullscreen);
+  }
+
+  saveSettings(settings);
   return settings;
 });
 

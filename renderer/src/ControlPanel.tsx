@@ -1,5 +1,5 @@
 // Control Panel: where the host sets up media, branding and the TV screen.
-// Step 4a: logo, winner video, winner audio and background music can be chosen.
+// Step 5: media, logo, banners, seconds per banner and full screen can all be changed and saved.
 import { useEffect, useState } from 'react';
 import type { ControlPanelSettings, MediaSettingKey } from '../../host/index';
 
@@ -23,10 +23,15 @@ function SettingRow({ label, value, onChoose }: { label: string; value: string; 
 
 export function ControlPanel() {
   const [settings, setSettings] = useState<ControlPanelSettings | null>(null);
+  const [secondsText, setSecondsText] = useState(''); // what is typed in "Seconds per banner"
+  const [secondsError, setSecondsError] = useState('');
 
   // When the Control Panel opens, ask the app for the saved settings
   useEffect(() => {
-    window.bingo?.getSettings().then(setSettings);
+    window.bingo?.getSettings().then((loaded) => {
+      setSettings(loaded);
+      setSecondsText(String(loaded.branding.bannerIntervalSeconds));
+    });
   }, []);
 
   if (!window.bingo) {
@@ -38,6 +43,22 @@ export function ControlPanel() {
   }
 
   const banners = settings.branding.sponsorBanners;
+
+    // Save "Seconds per banner" when the host leaves the box or presses Enter
+  const saveSeconds = () => {
+    const seconds = Number(secondsText);
+    if (!Number.isInteger(seconds) || seconds < 3 || seconds > 120) {
+      setSecondsError('Enter a whole number from 3 to 120');
+      return;
+    }
+    setSecondsError('');
+    window.bingo?.updateOptions({ bannerIntervalSeconds: seconds }).then(setSettings);
+  };
+
+  // Save "Full screen" as soon as it is ticked or unticked
+  const saveFullscreen = (fullscreen: boolean) => {
+    window.bingo?.updateOptions({ fullscreen }).then(setSettings);
+  };
 
   // Open the file picker for one setting, then show the updated settings
   const choose = (key: MediaSettingKey) => {
@@ -80,7 +101,17 @@ export function ControlPanel() {
         
         <label style={{ padding: '6px 0' }}>
           <span style={{ display: 'inline-block', width: '180px', fontWeight: 'bold' }}>Seconds per banner</span>
-          <input type="number" min={3} max={120} value={settings.branding.bannerIntervalSeconds} readOnly style={{ width: '80px' }} />
+          <input
+            type="number"
+            min={3}
+            max={120}
+            value={secondsText}
+            onChange={(e) => setSecondsText(e.target.value)}
+            onBlur={saveSeconds}
+            onKeyDown={(e) => { if (e.key === 'Enter') saveSeconds(); }}
+            style={{ width: '80px' }}
+          />
+          {secondsError && <span style={{ color: '#d32f2f', marginLeft: '12px' }}>{secondsError}</span>}
         </label>
       </section>
 
@@ -93,7 +124,11 @@ export function ControlPanel() {
           </select>
         </label>
         <label style={{ padding: '6px 0' }}>
-          <input type="checkbox" checked={settings.display.fullscreen} readOnly /> Full screen
+          <input
+            type="checkbox"
+            checked={settings.display.fullscreen}
+            onChange={(e) => saveFullscreen(e.target.checked)}
+          /> Full screen (when a second screen is connected)
         </label>
       </section>
     </div>
