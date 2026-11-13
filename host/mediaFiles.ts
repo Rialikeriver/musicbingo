@@ -1,6 +1,7 @@
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import { randomUUID } from 'crypto';
 import type { ControlPanelSettings, MediaSettingKey } from './index';
 
 // Which file types the picker allows for each setting
@@ -22,10 +23,12 @@ export function mediaFolder(): string {
 }
 
 // Copy a chosen file into the media folder under a new, unique name
-export function copyIntoMediaFolder(sourcePath: string, key: MediaSettingKey): string {
+// (prefix is the start of the name, e.g. "venueLogo" or "banner")
+export function copyIntoMediaFolder(sourcePath: string, prefix: string): string {
   fs.mkdirSync(mediaFolder(), { recursive: true });
   const extension = path.extname(sourcePath).toLowerCase();
-  const destination = path.join(mediaFolder(), `${key}-${Date.now()}${extension}`);
+  const uniquePart = `${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const destination = path.join(mediaFolder(), `${prefix}-${uniquePart}${extension}`);
   fs.copyFileSync(sourcePath, destination);
   return destination;
 }

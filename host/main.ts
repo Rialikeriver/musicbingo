@@ -79,6 +79,39 @@ ipcMain.handle('settings:chooseFile', async (event, key: unknown) => {
   return settings;
 });
 
+// "Add banner…": pick one or more images, copy them, add them to the banner list
+ipcMain.handle('settings:addBanners', async (event) => {
+  const options: Electron.OpenDialogOptions = {
+    title: 'Choose sponsor banner images',
+    properties: ['openFile', 'multiSelections'],
+    filters: FILE_FILTERS.venueLogo // same image types as the logo
+  };
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+
+  const settings = loadSettings();
+  if (result.canceled || result.filePaths.length === 0) return settings; // host pressed Cancel
+
+  for (const filePath of result.filePaths) {
+    settings.branding.sponsorBanners.push(copyIntoMediaFolder(filePath, 'banner'));
+  }
+  saveSettings(settings);
+  return settings;
+});
+
+// "Remove": take one banner out of the list and delete its copy
+ipcMain.handle('settings:removeBanner', (_event, bannerPath: unknown) => {
+  const settings = loadSettings();
+  // Only remove a path that is really in the banner list
+  if (typeof bannerPath !== 'string' || !settings.branding.sponsorBanners.includes(bannerPath)) {
+    return settings;
+  }
+  settings.branding.sponsorBanners = settings.branding.sponsorBanners.filter(p => p !== bannerPath);
+  saveSettings(settings);
+  removeOldCopy(bannerPath);
+  return settings;
+});
+
 app.whenReady().then(() => {
   createHostWindow();
   createAudienceWindow();

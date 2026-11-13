@@ -9,6 +9,8 @@ declare global {
       onAudienceText: (callback: (text: string) => void) => void;
       getSettings: () => Promise<ControlPanelSettings>;
       chooseFile: (key: MediaSettingKey) => Promise<ControlPanelSettings>;
+      addBanners: () => Promise<ControlPanelSettings>;
+      removeBanner: (bannerPath: string) => Promise<ControlPanelSettings>;
     };
   }
 }

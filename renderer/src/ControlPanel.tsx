@@ -58,13 +58,26 @@ export function ControlPanel() {
       <section className="panel">
         <h3>Branding</h3>
         <SettingRow label="Venue logo" value={fileName(settings.branding.venueLogo)} onChoose={() => choose('venueLogo')} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
+        
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '6px 0' }}>
           <span style={{ width: '180px', fontWeight: 'bold' }}>Sponsor banners</span>
-          <span className="muted" style={{ flex: 1 }}>
-            {banners.length === 0 ? 'No banners yet' : banners.map(fileName).join(', ')}
-          </span>
-          <button className="btn" disabled>Add banner…</button>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {banners.length === 0 ? (
+              <span className="muted">No banners yet</span>
+            ) : (
+              banners.map((banner) => (
+                <div key={banner} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="muted" style={{ flex: 1 }}>{fileName(banner)}</span>
+                  <button className="btn" onClick={() => window.bingo?.removeBanner(banner).then(setSettings)}>
+                    Remove
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+          <button className="btn" onClick={() => window.bingo?.addBanners().then(setSettings)}>Add banner…</button>
         </div>
+        
         <label style={{ padding: '6px 0' }}>
           <span style={{ display: 'inline-block', width: '180px', fontWeight: 'bold' }}>Seconds per banner</span>
           <input type="number" min={3} max={120} value={settings.branding.bannerIntervalSeconds} readOnly style={{ width: '80px' }} />
