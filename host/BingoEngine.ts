@@ -30,7 +30,7 @@ export interface BingoCardSquare {
 // Structure for a full bingo card
 export interface BingoCard {
   cardId: string;               // Unique card id
-  grid: BingoCardSquare[][];    // Bingo card grid (5x5)
+  grid: BingoCardSquare[][];    // Bingo card grid (X by X)
   markedGrid: boolean[][];      // Bingo card marked grid
 }
 
@@ -58,6 +58,29 @@ export class BingoEngine {
     return { rowsCols, totalCards };
   }
 
+  // Converts M3U parsed strings ("Artist-Title") into song objects for generateCard
+  public static formatParsedM3UTracks(
+    rawTracks: string[]
+  ): Array<{ id: string; title: string; artist: string }> {
+    return rawTracks.map((entry, index) => {
+      const separatorIndex = entry.indexOf('-');
+      if (separatorIndex !== -1) {
+        const artist = entry.slice(0, separatorIndex).trim();
+        const title = entry.slice(separatorIndex + 1).trim();
+        return {
+          id: `m3u-${index + 1}`,
+          title: title || entry.trim(),
+          artist: artist || 'Unknown Artist',
+        };
+      }
+      return {
+        id: `m3u-${index + 1}`,
+        title: entry.trim(),
+        artist: 'Unknown Artist',
+      };
+    });
+  }
+
   // Builds a true/false pattern grid mask
   public static generatePatternMask(pattern: WinningPattern, size: number = 5, customGrid?: boolean[][]): boolean[][] {
     let grid: boolean[][] = Array(size).fill(false).map(() => Array(size).fill(false));
@@ -72,7 +95,7 @@ export class BingoEngine {
         for (let c = 0; c < size; c++) grid[size - 1][c] = true;
         break;
       case 'custom': // Custom pattern chosen by host
-        if (customGrid) return customGrid;
+        if (customGrid && customGrid.length === size) return customGrid;
         break;
       case 'horizontal': // Horizontal pattern
         for (let c = 0; c < size; c++) grid[Math.floor(size / 2)][c] = true;
@@ -118,7 +141,7 @@ export class BingoEngine {
 
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
-        // Center free space is always marked
+        // Center free space is always marked on odd-sized grids
         const isFree = (size % 2 !== 0 && r === centerIndex && c === centerIndex);
         const cellMarked = isFree || markedGrid[r][c];
 
@@ -140,7 +163,7 @@ export class BingoEngine {
     const size = markedGrid.length;
     const centerIndex = Math.floor(size / 2);
 
-    // Ensure center free space is always true
+    // Ensure center free space is always true on odd-sized grids
     const evaluatedGrid = markedGrid.map((row, r) =>
       row.map((val, c) => (size % 2 !== 0 && r === centerIndex && c === centerIndex ? true : val))
     );
@@ -277,7 +300,7 @@ export class BingoEngine {
     }
   }
 
-  // Generates a unique 5x5 card for players with selected display options
+  // Generates a unique X by X card for players with selected display options
   public static generateCard(
     cardId: string,
     songPool: Array<{ id: string; title: string; artist: string; album?: string }>,
