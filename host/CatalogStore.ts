@@ -4,6 +4,7 @@ import { Track } from './index';
 import { DataLookup } from './DataLookup';
 import { parseTrackName } from './TrackParser';
 import { stableTrackId } from './stableId';
+import { readFileTags } from './TrackMetadata';
 
 // The song catalog, saved to one JSON file and loaded again on start-up.
 export class CatalogStore {
@@ -40,13 +41,19 @@ export class CatalogStore {
 
   // Add one audio/video file to the catalog.
   // duration is in seconds, measured by the screen that picked the file.
+  // Artist and title come from the file's tags when it has them, otherwise from the file name.
   // Returns the new track, or null if this file is already in the catalog.
-  importFile(filePath: string, duration: number): Track | null {
+  async importFile(filePath: string, duration: number): Promise<Track | null> {
     const id = stableTrackId(filePath);
     if (this.lookup.has(id)) return null;
 
-    const { artist, title } = parseTrackName(filePath);
-    const length = duration > 0 ? duration : 30; // same fallback the import screen uses
+    const fromName = parseTrackName(filePath);
+    const tags = await readFileTags(filePath);
+    const artist = tags.artist ?? fromName.artist;
+    const title = tags.title ?? fromName.title;
+
+    const measured = duration > 0 ? duration : (tags.duration ?? 0);
+    const length = measured > 0 ? measured : 30; // same fallback the import screen uses
 
     const track: Track = {
       id,
@@ -66,6 +73,11 @@ export class CatalogStore {
 
   list(): Track[] {
     return this.lookup.all();
+  }
+
+  // The file location for a track id, or undefined if the song is not in the catalog.
+  getAddress(id: string): string | undefined {
+    return this.lookup.getAddress(id);
   }
 
   // Remove a track by id. Returns true if it was removed.
