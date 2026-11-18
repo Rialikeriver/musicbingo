@@ -9,6 +9,7 @@ export const CatalogManager: React.FC = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
   const [message, setMessage] = useState<string>('');
+  const [cropError, setCropError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const connected = Boolean(window.catalogApi);
@@ -117,27 +118,40 @@ export const CatalogManager: React.FC = () => {
       return;
     }
 
-    const result = await window.catalogApi.updateCrop(
-      updatedTrack.id, updatedTrack.startTime, updatedTrack.endTime
-    );
+    try {
+      const result = await window.catalogApi.updateCrop(
+        updatedTrack.id, updatedTrack.startTime, updatedTrack.endTime
+      );
 
-    if (!result) {
-      // The host rejected the crop (for example, end past the song length). Keep the old crop.
-      setMessage('That crop was not saved. Check the start and end times.');
-      return;
+      if (!result) {
+        // The host rejected the crop (for example, end past the song length). Keep the old crop.
+        setCropError('The host did not save this crop. Check the start and end times.');
+        return;
+      }
+
+      setTracks(prev => prev.map(t =>
+        t.id === updatedTrack.id ? { ...t, startTime: result.startTime, endTime: result.endTime } : t
+      ));
+      setCropError('');
+      setEditingTrack(null);
+    } catch {
+      setCropError('Could not save the crop. Try again.');
     }
-
-    setTracks(prev => prev.map(t =>
-      t.id === updatedTrack.id ? { ...t, startTime: result.startTime, endTime: result.endTime } : t
-    ));
-    setEditingTrack(null);
   };
 
   const removeTrack = async (id: string) => {
-    if (window.catalogApi) {
-      await window.catalogApi.remove(id);
+    try {
+      if (window.catalogApi) {
+        const removed = await window.catalogApi.remove(id);
+        if (!removed) {
+          setMessage('That song could not be removed from the saved catalog.');
+          return;
+        }
+      }
+      setTracks(prev => prev.filter(t => t.id !== id));
+    } catch {
+      setMessage('That song could not be removed. Try again.');
     }
-    setTracks(prev => prev.filter(t => t.id !== id));
   };
 
   return (
@@ -200,7 +214,10 @@ export const CatalogManager: React.FC = () => {
                 <div className="move-btns">
                   <button
                     className="btn"
-                    onClick={() => setEditingTrack(track)}
+                    onClick={() => {
+                      setCropError('');
+                      setEditingTrack(track);
+                    }}
                     style={{ fontSize: '12px', height: 'auto', width: 'auto', padding: '4px 8px' }}
                   >
                     Edit Crop
@@ -219,7 +236,11 @@ export const CatalogManager: React.FC = () => {
         <TrackCropperModal
           track={editingTrack}
           onSave={handleSaveCrop}
-          onClose={() => setEditingTrack(null)}
+          onClose={() => {
+            setCropError('');
+            setEditingTrack(null);
+          }}
+          error={cropError}
         />
       )}
     </div>

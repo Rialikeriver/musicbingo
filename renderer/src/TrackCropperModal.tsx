@@ -6,12 +6,21 @@ interface TrackCropperModalProps {
   track: Track;
   onSave: (updatedTrack: Track) => void;
   onClose: () => void;
+  error?: string; // a message from the last save attempt, shown in the window
 }
 
-export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onSave, onClose }) => {
+export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onSave, onClose, error }) => {
   const [startTime, setStartTime] = useState<number>(track.startTime || 0);
   const [endTime, setEndTime] = useState<number>(track.endTime || track.duration || 30);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playError, setPlayError] = useState('');
+  // Latest crop times for the drag handlers, which are attached to window once per drag
+  const startRef = useRef(startTime);
+  const endRef = useRef(endTime);
+  useEffect(() => {
+    startRef.current = startTime;
+    endRef.current = endTime;
+  }, [startTime, endTime]);
 
   const mediaRef = useRef<HTMLAudioElement | HTMLVideoElement | null>(null);
   const trackBarRef = useRef<HTMLDivElement>(null);
@@ -53,10 +62,12 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
       mediaRef.current.play()
         .then(() => {
           setIsPlaying(true);
+          setPlayError('');
         })
         .catch((err) => {
           console.error("Browser playback blocked or failed:", err);
           setIsPlaying(false);
+          setPlayError('Could not play this song. Check that its file is still in its folder.');
         });
     }
   };
@@ -69,7 +80,7 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
     const calculatedTime = Math.round(percentage * track.duration * 10) / 10;
 
     if (isDraggingStart.current) {
-      if (calculatedTime < endTime - 1) {
+      if (calculatedTime < endRef.current - 1) {
         setStartTime(calculatedTime);
         // Sync media current time to the new start point while dragging
         if (mediaRef.current) {
@@ -77,7 +88,7 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
         }
       }
     } else if (isDraggingEnd.current) {
-      if (calculatedTime > startTime + 1) {
+      if (calculatedTime > startRef.current + 1) {
         setEndTime(calculatedTime);
       }
     }
@@ -87,7 +98,7 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
     if ((isDraggingStart.current || isDraggingEnd.current) && mediaRef.current) {
       // If it was playing before dragging, resume from the updated start point
       if (wasPlayingBeforeDrag.current) {
-        mediaRef.current.currentTime = startTime;
+        mediaRef.current.currentTime = startRef.current;
         mediaRef.current.play()
           .then(() => setIsPlaying(true))
           .catch(() => setIsPlaying(false));
@@ -120,6 +131,14 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  // Explain why Save is off, so the host knows what to fix
+  const cropProblem =
+    startTime < 0 ? 'Start time cannot be negative.'
+    : endTime <= startTime ? 'End time must be after start time.'
+    : endTime > track.duration ? `End time cannot be past the song length (${track.duration}s).`
+    : '';
+  const messages = [error, cropProblem, playError].filter(Boolean) as string[];
+
   const startPercent = track.duration ? (startTime / track.duration) * 100 : 0;
   const endPercent = track.duration ? (endTime / track.duration) * 100 : 100;
 
@@ -136,6 +155,7 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
               preload="auto"
               style={{ width: '100%', maxHeight: '200px' }}
               onTimeUpdate={handleTimeUpdate}
+              onError={() => setPlayError('Could not load this song. Check that its file is still there.')}
             />
           ) : (
             <audio
@@ -143,6 +163,7 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
               src={mediaSrc}
               preload="auto"
               onTimeUpdate={handleTimeUpdate}
+              onError={() => setPlayError('Could not load this song. Check that its file is still there.')}
             />
           )}
         </div>
@@ -234,9 +255,17 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
           </div>
         </div>
 
+        {messages.map((text) => (
+          <div key={text} style={{ color: '#b45309', fontSize: '13px', marginBottom: '8px' }}>{text}</div>
+        ))}
+
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
           <button className="btn" onClick={onClose}>Cancel</button>
-          <button className="btn green" onClick={() => onSave({ ...track, startTime, endTime })}>
+          <button
+            className="btn green"
+            disabled={Boolean(cropProblem)}
+            onClick={() => onSave({ ...track, startTime, endTime })}
+          >
             Save Crop
           </button>
         </div>
