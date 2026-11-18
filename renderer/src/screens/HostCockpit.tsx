@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { Track } from '../../../host/index';
 import { rounds, songs } from '../data/fakeData';
 import { CatalogManager } from '../CatalogManager';
 import { ControlPanel } from '../ControlPanel';
@@ -18,21 +19,47 @@ const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 // Host's laptop screen: the "cockpit" from the legacy walkthrough.
 export default function HostCockpit() {
-  const callList = songs.slice(3);
+  // The engine plays catalog songs; trackLookup lets it find each song's file.
+  const [catalogTracks, setCatalogTracks] = useState<Track[]>([]);
+  const trackLookup = useRef(new Map<string, Track>());
+  const [engine] = useState(() => new PlaybackEngine({
+    getAddress: (id) => trackLookup.current.get(id)?.filePath,
+    getTrack: (id) => trackLookup.current.get(id),
+  }));
+  const audioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    if (!window.catalogApi) return;
+    window.catalogApi.list()
+      .then((saved) => {
+        trackLookup.current = new Map(saved.map((t) => [t.id, t]));
+        setCatalogTracks(saved);
+      })
+      .catch(() => {});
+  }, []);
+  // Saved catalog songs make up the call list when there are any; otherwise the sample songs show.
+  const callList = catalogTracks.length > 0 ? catalogTracks : songs.slice(3);
   const called = songs.slice(0, 3);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<'timers' | 'bingo'>('timers');
   const [activeView, setActiveView] = useState<'dashboard' | 'catalog' | 'controlPanel'>('dashboard');
-  // The playback engine holds the speed, durations and volume the songs will use.
-  const [engine] = useState(() => new PlaybackEngine());
   const [callSeconds, setCallSeconds] = useState(engine.getCallDuration());
   const [breakSeconds, setBreakSeconds] = useState(engine.getBreakDuration());
   const [speed, setSpeed] = useState(engine.getPlaybackSpeed());
   const [volume, setVolume] = useState(engine.getVolume());
   const [randomStart, setRandomStart] = useState(false);
   const [fadeOut, setFadeOut] = useState(true);
+  // Play starts the call list, or resumes it after a pause. Ignored while a song or break is running.
+  const onPlay = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    const state = engine.getState();
+    if (state === 'playing' || state === 'breaking') return;
+    engine.start(catalogTracks.map((t) => t.id), el);
+  };
+
   return (
     <div className="host">
+      <audio ref={audioRef} preload="auto" style={{ display: 'none' }} />
       {/* Top bar */}
       <header className="host-top">
         <select defaultValue={rounds[1]}>
@@ -41,9 +68,9 @@ export default function HostCockpit() {
           ))}
         </select>
         <div className="host-actions">
-          <button className="btn green">▶ Play</button>
-          <button className="btn">⏸ Pause</button>
-          <button className="btn">Next</button>
+          <button className="btn green" onClick={onPlay}>▶ Play</button>
+          <button className="btn" onClick={() => engine.pause()}>⏸ Pause</button>
+          <button className="btn" onClick={() => engine.next()}>Next</button>
           <button className="btn">Reset Game</button>
           <button 
           className={`btn ${activeView === 'catalog' ? 'green' : ''}`} 
@@ -188,11 +215,25 @@ export default function HostCockpit() {
                     <span>Call 0:08</span><span>Break 0</span><span>Time 0:46</span>
                   </div>
                   <label>
-                    <input type="checkbox" checked={randomStart} onChange={(e) => setRandomStart(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={randomStart}
+                      onChange={(e) => {
+                        setRandomStart(e.target.checked);
+                        engine.setRandomStart(e.target.checked);
+                      }}
+                    />
                     {' '}Randomize start time
                   </label>
                   <label>
-                    <input type="checkbox" checked={fadeOut} onChange={(e) => setFadeOut(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={fadeOut}
+                      onChange={(e) => {
+                        setFadeOut(e.target.checked);
+                        engine.setFadeOut(e.target.checked);
+                      }}
+                    />
                     {' '}Volume fade out
                   </label>
                   <label className="wide">
