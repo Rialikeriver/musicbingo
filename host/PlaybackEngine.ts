@@ -1,9 +1,27 @@
 import { Track } from './index';
+import { mediaUrlFor } from './mediaUrl';
 
 export class PlaybackEngine {
-  private currentTrack: Track | null = null;
+  private currentTrackId: string | null = null;
   private playbackSpeed: number = 1.0;
   private callDurationTimer: NodeJS.Timeout | null = null;
+
+  // getAddress is the catalog's lookup: track id -> file path (CatalogStore.getAddress).
+  constructor(private readonly getAddress: (trackId: string) => string | undefined = () => undefined) {}
+
+  // Point an audio or video element at a catalog song.
+  // Returns false if the id is not in the catalog, so the caller can show a message.
+  public loadTrack(trackId: string, element: { src: string }): boolean {
+    const filePath = this.getAddress(trackId);
+    if (!filePath) return false;
+    element.src = mediaUrlFor(filePath);
+    this.currentTrackId = trackId;
+    return true;
+  }
+
+  public getCurrentTrackId(): string | null {
+    return this.currentTrackId;
+  }
 
   public setSpeed(speed: number): void {
     this.playbackSpeed = speed;
