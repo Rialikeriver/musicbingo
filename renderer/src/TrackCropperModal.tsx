@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Track } from '../../../host/index';
+import type { Track } from '../../host/index';
+import { mediaUrlFor } from '../../host/mediaUrl';
 
 interface TrackCropperModalProps {
   track: Track;
@@ -21,7 +22,8 @@ export const TrackCropperModal: React.FC<TrackCropperModalProps> = ({ track, onS
   const wasPlayingBeforeDrag = useRef(false);
 
   const isVideo = track.filePath.toLowerCase().endsWith('.mp4');
-  const mediaSrc = track.previewUrl || `file://${track.filePath}`;
+  // A fresh import has a blob preview; a song loaded from the saved catalog plays through the host
+  const mediaSrc = track.previewUrl || mediaUrlFor(track.filePath);
 
   useEffect(() => {
     console.log("Playing media from source:", mediaSrc);

@@ -2,26 +2,39 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Track } from '../../host/index';
 import { TrackCropperModal } from './TrackCropperModal';
 
+// Electron gives dropped and browsed files a full path on disk
+type FileWithPath = File & { path?: string };
+
 export const CatalogManager: React.FC = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
+  const [message, setMessage] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Show the saved catalog when the screen opens (only inside the Electron app)
+  const connected = Boolean(window.catalogApi);
+
+  // Show the saved catalog when the screen opens
   useEffect(() => {
-    window.catalogApi?.list().then(saved => setTracks(saved));
+    if (!window.catalogApi) return;
+    window.catalogApi.list()
+      .then(saved => setTracks(saved))
+      .catch(() => setMessage('Could not load the saved catalog.'));
   }, []);
 
-  // Read video/audio duration via an in-memory browser element
+  // Read the length of an audio or video file in the browser
   const getFileDuration = (file: File): Promise<number> => {
     return new Promise((resolve) => {
       const element = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
-      element.src = URL.createObjectURL(file);
+      const url = URL.createObjectURL(file);
+      element.src = url;
       element.onloadedmetadata = () => {
         resolve(Math.round(element.duration) || 0);
-        URL.revokeObjectURL(element.src);
+        URL.revokeObjectURL(url);
       };
-      element.onerror = () => resolve(0);
+      element.onerror = () => {
+        resolve(0);
+        URL.revokeObjectURL(url);
+      };
     });
   };
 
@@ -32,41 +45,58 @@ export const CatalogManager: React.FC = () => {
       /\.(mp3|mp4|wav|ogg|m4a)$/i.test(file.name)
     );
 
-    const added: Track[] = [];
-    for (const file of validFiles) {
-      const duration = await getFileDuration(file);
-      const previewUrl = URL.createObjectURL(file); // Browser-safe blob URL for playback
-      const filePath = (file as any).path || file.name;
+    if (!window.catalogApi) {
+      setMessage('Not connected to the host, so these songs will not be saved.');
+    }
 
-      if (window.catalogApi) {
-        // Inside Electron: the host reads the artist and title, gives the song a stable id,
-        // and saves it. Returns null if this file is already in the catalog.
-        const saved = await window.catalogApi.importFile(filePath, duration);
-        if (saved) added.push({ ...saved, previewUrl });
-      } else {
-        // Plain browser preview (no host): keep the old behaviour
-        const cleanTitle = file.name.replace(/\.[^/.]+$/, '');
-        added.push({
-          id: `${Date.now()}-${Math.random()}`,
-          title: cleanTitle,
-          artist: 'Unknown Artist',
-          album: 'Unknown Album',
-          filePath,
-          previewUrl,
-          startTime: 0,
-          endTime: duration || 30,
-          duration: duration || 30,
-        });
+    const added: Track[] = [];
+    let duplicates = 0;
+    let failed = 0;
+
+    for (const file of validFiles) {
+      try {
+        const duration = await getFileDuration(file);
+        const previewUrl = URL.createObjectURL(file); // Browser preview of this session
+        const filePath = (file as FileWithPath).path || file.name;
+
+        if (window.catalogApi) {
+          // The host reads the artist and title, gives the song a stable id, and saves it.
+          // It returns null if this file is already in the catalog.
+          const saved = await window.catalogApi.importFile(filePath, duration);
+          if (saved) added.push({ ...saved, previewUrl });
+          else duplicates += 1;
+        } else {
+          // Plain browser preview: nothing is saved
+          const cleanTitle = file.name.replace(/\.[^/.]+$/, '');
+          added.push({
+            id: `${Date.now()}-${Math.random()}`,
+            title: cleanTitle,
+            artist: 'Unknown Artist',
+            album: 'Unknown Album',
+            filePath,
+            previewUrl,
+            startTime: 0,
+            endTime: duration || 30,
+            duration: duration || 30,
+          });
+        }
+      } catch {
+        failed += 1;
       }
     }
 
     setTracks(prev => [...prev, ...added]);
+
+    const parts: string[] = [];
+    if (added.length) parts.push(`${added.length} added`);
+    if (duplicates) parts.push(`${duplicates} already in the catalog`);
+    if (failed) parts.push(`${failed} could not be read`);
+    if (parts.length) setMessage(parts.join(', ') + '.');
   };
 
   const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const files = Array.from(e.dataTransfer.files);
-    processFiles(files);
+    processFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleBrowseClick = () => {
@@ -75,21 +105,31 @@ export const CatalogManager: React.FC = () => {
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      processFiles(files);
+      processFiles(Array.from(e.target.files));
     }
+    e.target.value = ''; // allow choosing the same file again later
   };
 
   const handleSaveCrop = async (updatedTrack: Track) => {
-    let saved = updatedTrack;
-    if (window.catalogApi) {
-      // Save the new crop to the host so it survives a restart
-      const result = await window.catalogApi.updateCrop(
-        updatedTrack.id, updatedTrack.startTime, updatedTrack.endTime
-      );
-      if (result) saved = { ...updatedTrack, startTime: result.startTime, endTime: result.endTime };
+    if (!window.catalogApi) {
+      setTracks(prev => prev.map(t => t.id === updatedTrack.id ? updatedTrack : t));
+      setEditingTrack(null);
+      return;
     }
-    setTracks(prev => prev.map(t => t.id === saved.id ? saved : t));
+
+    const result = await window.catalogApi.updateCrop(
+      updatedTrack.id, updatedTrack.startTime, updatedTrack.endTime
+    );
+
+    if (!result) {
+      // The host rejected the crop (for example, end past the song length). Keep the old crop.
+      setMessage('That crop was not saved. Check the start and end times.');
+      return;
+    }
+
+    setTracks(prev => prev.map(t =>
+      t.id === updatedTrack.id ? { ...t, startTime: result.startTime, endTime: result.endTime } : t
+    ));
     setEditingTrack(null);
   };
 
@@ -102,7 +142,6 @@ export const CatalogManager: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Hidden input supporting multi-file selection via Ctrl+S or multi-select */}
       <input
         type="file"
         ref={fileInputRef}
@@ -111,6 +150,12 @@ export const CatalogManager: React.FC = () => {
         accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a"
         style={{ display: 'none' }}
       />
+
+      {!connected && (
+        <div className="panel" style={{ color: '#b45309' }}>
+          Not connected to the host. Songs added here will not be saved.
+        </div>
+      )}
 
       {/* Drag & Drop */}
       <div
@@ -131,6 +176,8 @@ export const CatalogManager: React.FC = () => {
           Browse Files
         </button>
       </div>
+
+      {message && <div className="muted">{message}</div>}
 
       {/* Catalog List */}
       <div className="panel">
@@ -158,10 +205,7 @@ export const CatalogManager: React.FC = () => {
                   >
                     Edit Crop
                   </button>
-                  <button
-                    className="red"
-                    onClick={() => removeTrack(track.id)}
-                  >
+                  <button className="red" onClick={() => removeTrack(track.id)}>
                     ×
                   </button>
                 </div>
@@ -171,7 +215,6 @@ export const CatalogManager: React.FC = () => {
         )}
       </div>
 
-      {/* Cropper Modal */}
       {editingTrack && (
         <TrackCropperModal
           track={editingTrack}
