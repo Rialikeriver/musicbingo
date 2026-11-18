@@ -1,15 +1,69 @@
-/* Rough skeleton styles. Plain CSS for now; swap for Tailwind if the team picks it. */
-
 :root {
+  /* Brand colours */
   --orange: #ff9f00;
   --red: #ff1a00;
   --green: #1e9e3e;
+  --danger: #d32f2f;
+  --brand-gradient: linear-gradient(135deg, var(--orange), var(--red));
+
+  /* Surfaces (backgrounds) */
+  --bg: #f4f4f4;          /* page background */
+  --panel: #ffffff;       /* cards, panels, buttons */
+  --panel-2: #eeeeee;     /* slightly darker panel, e.g. inactive tabs */
+  --ink: #222222;         /* dark strips, e.g. sponsor banner */
+  --called: #888888;      /* songs already played */
   --border: #d0d0d0;
-  --bg: #f4f4f4;
-  --panel: #ffffff;
+  --selected: #222222;    /* outline around the selected song */
+
+  /* Text */
   --text: #1a1a1a;
-  --muted: #666;
-  font-family: system-ui, 'Segoe UI', Arial, sans-serif;
+  --muted: #666666;
+  --on-color: #ffffff;    /* text that sits on a coloured background */
+
+  /* Notices */
+  --warn-bg: #fff7e0;
+  --warn-border: #f0d080;
+
+  /* TV (audience screen) */
+  --tv-bg: #000000;
+  --tv-text: #ffffff;
+  --tv-panel: #222222;
+  --tv-card: #ffffff;     /* the flipping card on the TV (Phase 7) */
+  --tv-card-text: #1a1a1a;
+
+  /* Spacing: use these instead of random pixel values */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Shape */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.12);
+
+  /* Type */
+  --font-body: system-ui, 'Segoe UI', Arial, sans-serif;
+  --font-display: var(--font-body);   /* headings; change in Phase 2 */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 28px;
+
+  /* Motion */
+  --speed-fast: 120ms;
+  --speed-normal: 250ms;
+
+  /* Bingo card */
+  --grid-size: 5;         /* squares per row; see Phase 4 */
+
+  font-family: var(--font-body);
   color: var(--text);
   background: var(--bg);
 }
@@ -37,7 +91,7 @@ h2 {
   font-size: 13px;
 }
 
-/* ---------- Dev nav ---------- */
+/* Dev nav */
 .dev-nav {
   display: flex;
   gap: 12px;
@@ -57,23 +111,23 @@ h2 {
   font-weight: bold;
 }
 
-/* ---------- Shared ---------- */
+/* Shared */
 .btn {
   padding: 6px 12px;
   border: 1px solid var(--border);
-  background: white;
+  background: var(--panel);
   border-radius: 4px;
   cursor: pointer;
 }
 .btn.green {
   background: var(--green);
-  color: white;
+  color: var(--on-color);
   border-color: var(--green);
 }
 .btn.red {
-  background: #d32f2f;
-  color: white;
-  border-color: #d32f2f;
+  background: var(--danger);
+  color: var(--on-color);
+  border-color: var(--danger);
 }
 .btn.big {
   flex: 1;
@@ -90,15 +144,15 @@ h2 {
   flex-direction: column;
 }
 
-/* ---------- Player card (phone) ---------- */
+/* Player card (phone) */
 .player {
   max-width: 420px;
   margin: 0 auto;
   padding: 12px 16px 24px;
 }
 .sponsor-banner {
-  background: #222;
-  color: white;
+  background: var(--ink);
+  color: var(--on-color);
   text-align: center;
   padding: 8px;
   border-radius: 6px;
@@ -119,11 +173,11 @@ h2 {
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #ddd;
+  background: var(--panel-2);
 }
 .pill.playing {
   background: var(--green);
-  color: white;
+  color: var(--on-color);
 }
 .card-grid {
   display: grid;
@@ -133,15 +187,15 @@ h2 {
 .cell {
   aspect-ratio: 1;
   font-size: 11px;
-  border: 1px solid #333;
-  background: white;
-  color: black;
+  border: 1px solid var(--text);
+  background: var(--panel);
+  color: var(--text);
   padding: 2px;
   cursor: pointer;
 }
 .cell.marked {
-  background: linear-gradient(135deg, var(--orange), var(--red));
-  color: white;
+  background: var(--brand-gradient);
+  color: var(--on-color);
 }
 .cell.free {
   font-weight: bold;
@@ -155,7 +209,7 @@ h2 {
   border: none;
   border-radius: 8px;
   background: var(--green);
-  color: white;
+  color: var(--on-color);
   cursor: pointer;
 }
 .result-msg {
@@ -167,7 +221,7 @@ h2 {
   border-radius: 6px;
 }
 
-/* ---------- Host cockpit (laptop) ---------- */
+/* Host cockpit (laptop) */
 .host {
   height: calc(100vh - 30px);
   display: grid;
@@ -222,15 +276,15 @@ h2 {
   align-items: center;
   padding: 6px 8px;
   border-radius: 4px;
-  color: white;
-  background: linear-gradient(90deg, var(--orange), var(--red));
+  color: var(--on-color);
+  background: var(--brand-gradient);
   cursor: pointer;
 }
 .song-row.selected {
-  outline: 3px solid #222;
+  outline: 3px solid var(--selected);
 }
 .song-row.called {
-  background: #888;
+  background: var(--called);
   cursor: default;
 }
 .song-title {
@@ -253,8 +307,8 @@ h2 {
   cursor: pointer;
 }
 .move-btns button.red {
-  background: #d32f2f;
-  color: white;
+  background: var(--danger);
+  color: var(--on-color);
 }
 .tabs {
   display: flex;
@@ -264,12 +318,12 @@ h2 {
 .tabs button {
   padding: 6px 12px;
   border: 1px solid var(--border);
-  background: #eee;
+  background: var(--panel-2);
   border-radius: 4px 4px 0 0;
   cursor: pointer;
 }
 .tabs button.active {
-  background: white;
+  background: var(--panel);
   font-weight: bold;
 }
 .form-grid {
@@ -291,8 +345,8 @@ h2 {
 .claim {
   margin-top: 4px;
   padding: 6px;
-  background: #fff7e0;
-  border: 1px solid #f0d080;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
   border-radius: 4px;
 }
 .big-btns {
@@ -301,19 +355,19 @@ h2 {
 }
 .preview-box {
   flex: 1;
-  background: black;
-  color: white;
+  background: var(--tv-bg);
+  color: var(--tv-text);
   display: grid;
   place-items: center;
   font-size: 24px;
   border-radius: 4px;
 }
 
-/* ---------- Audience screen (TV) ---------- */
+/* Audience screen (TV) */
 .audience {
   height: calc(100vh - 30px);
-  background: black;
-  color: white;
+  background: var(--tv-bg);
+  color: var(--tv-text);
   position: relative;
   overflow: hidden;
 }
@@ -379,7 +433,7 @@ h2 {
   grid-column: 1 / -1;
   text-align: center;
   padding: 12px;
-  background: #222;
+  background: var(--tv-panel);
   font-size: 20px;
 }
 .aud-song {
@@ -391,7 +445,7 @@ h2 {
   text-align: center;
   font-size: 64px;
   padding: 16px;
-  background: black;
+  background: var(--tv-bg);
 }
 .video-box {
   flex: 1;
