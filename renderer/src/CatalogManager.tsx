@@ -2,9 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Track } from '../../host/index';
 import { TrackCropperModal } from './TrackCropperModal';
 
-// Electron gives dropped and browsed files a full path on disk
-type FileWithPath = File & { path?: string };
-
 export const CatalogManager: React.FC = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
@@ -58,7 +55,8 @@ export const CatalogManager: React.FC = () => {
       try {
         const duration = await getFileDuration(file);
         const previewUrl = URL.createObjectURL(file); // Browser preview of this session
-        const filePath = (file as FileWithPath).path || file.name;
+        // The full path on disk, from the host. Plain browser preview falls back to the file name.
+        const filePath = window.catalogApi?.getFilePath(file) || file.name;
 
         if (window.catalogApi) {
           // The host reads the artist and title, gives the song a stable id, and saves it.
