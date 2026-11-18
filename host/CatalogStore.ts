@@ -82,6 +82,7 @@ export class CatalogStore {
     const existing = this.lookup.getTrack(id);
     if (!existing) return null;
     if (!(startTime >= 0) || !(endTime > startTime)) return null;
+    if (endTime > existing.duration) return null; // cannot crop past the end of the song
 
     const updated: Track = { ...existing, startTime, endTime };
     this.lookup.update(updated);

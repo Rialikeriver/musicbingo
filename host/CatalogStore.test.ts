@@ -62,6 +62,7 @@ assert.strictEqual(cropped!.startTime, 10);
 assert.strictEqual(cropped!.endTime, 90);
 assert.strictEqual(cropped!.duration, 240, 'duration is not changed by a crop');
 assert.strictEqual(cropStore.updateCrop(song.id, 50, 50), null, 'end must be after start');
+assert.strictEqual(cropStore.updateCrop(song.id, 10, 300), null, 'end must not pass the song length');
 assert.strictEqual(cropStore.updateCrop(song.id, -1, 20), null, 'start must not be negative');
 assert.strictEqual(cropStore.updateCrop('unknown-id', 0, 10), null, 'unknown id');
 const cropReloaded = new CatalogStore(path.join(dir, 'crop.json'));

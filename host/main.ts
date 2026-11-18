@@ -1,7 +1,14 @@
-import { app, BrowserWindow, screen, ipcMain } from 'electron';
+import { app, BrowserWindow, screen, ipcMain, net, protocol } from 'electron';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import { CatalogStore } from './CatalogStore';
 import { registerCatalogHandlers } from './catalogIpc';
+import { MEDIA_SCHEME, filePathFromMediaUrl } from './mediaUrl';
+
+// Must be called before the app is ready. Lets the screens play songs from media:// addresses.
+protocol.registerSchemesAsPrivileged([
+  { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+]);
 
 let audienceWin: BrowserWindow | null = null;
 
@@ -51,6 +58,11 @@ ipcMain.on('audience-text', (_event, text: string) => {
 });
 
 app.whenReady().then(() => {
+  // Serve media:// addresses by reading the real file from disk
+  protocol.handle(MEDIA_SCHEME, (request) =>
+    net.fetch(pathToFileURL(filePathFromMediaUrl(request.url)).toString())
+  );
+
   // Load the saved song catalog and let the import screen talk to it
   const catalog = new CatalogStore(path.join(app.getPath('userData'), 'catalog.json'));
   catalog.load();
