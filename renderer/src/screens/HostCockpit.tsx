@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { rounds, songs } from '../data/fakeData';
 import { CatalogManager } from '../CatalogManager';
 import { ControlPanel } from '../ControlPanel';
+import ThemeToggle from '../components/ThemeToggle';
 
 // Host's laptop screen: the "cockpit" from the legacy walkthrough.
 export default function HostCockpit() {
@@ -37,6 +38,7 @@ export default function HostCockpit() {
           >
             {activeView === 'controlPanel' ? '← Back to Cockpit' : 'Control Panel'}
           </button>
+          <ThemeToggle />
         </div>
       </header>
 

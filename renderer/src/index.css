@@ -63,9 +63,26 @@
   /* Bingo card */
   --grid-size: 5;         /* squares per row; see Phase 4 */
 
+  color-scheme: light;
   font-family: var(--font-body);
   color: var(--text);
   background: var(--bg);
+}
+
+/* Dark theme: same token names, different values */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #121212;
+  --panel: #1e1e1e;
+  --panel-2: #2a2a2a;
+  --ink: #2c2c2c;
+  --called: #555555;
+  --border: #333333;
+  --selected: #f2f2f2;
+  --text: #f2f2f2;
+  --muted: #a0a0a0;
+  --warn-bg: #3a3000;
+  --warn-border: #806a00;
 }
 
 * {
