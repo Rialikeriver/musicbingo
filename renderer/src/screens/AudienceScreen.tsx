@@ -9,13 +9,15 @@ export default function AudienceScreen() {
 
   return (
     <div className="audience">
-      <div className="dev-modes">
-        {(['break', 'song', 'check'] as Mode[]).map((m) => (
-          <button key={m} className={mode === m ? 'active' : ''} onClick={() => setMode(m)}>
-            {m}
-          </button>
-        ))}
-      </div>
+      {import.meta.env.DEV && (
+        <div className="dev-modes">
+          {(['break', 'song', 'check'] as Mode[]).map((m) => (
+            <button key={m} className={mode === m ? 'active' : ''} onClick={() => setMode(m)}>
+              {m}
+            </button>
+          ))}
+        </div>
+      )}
 
       {mode === 'break' && (
         <div className="aud-break">

@@ -63,6 +63,9 @@
   /* Bingo card */
   --grid-size: 5;         /* squares per row; see Phase 4 */
 
+  /* Dev bar height: 0 unless the dev bar is on the page */
+  --devbar-h: 0px;
+
   color-scheme: light;
   font-family: var(--font-body);
   color: var(--text);
@@ -83,6 +86,11 @@
   --muted: #a0a0a0;
   --warn-bg: #3a3000;
   --warn-border: #806a00;
+}
+
+/* When the dev bar is on the page, make room for it */
+:root:has(.dev-nav) {
+  --devbar-h: 30px;
 }
 
 * {
@@ -113,7 +121,8 @@ h2 {
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 6px 12px;
+  height: var(--devbar-h);
+  padding: 0 12px;
   background: #222;
   color: #aaa;
   font-size: 13px;
@@ -286,7 +295,7 @@ h2 {
 
 /* Host cockpit (laptop) */
 .host {
-  height: calc(100vh - 30px);
+  height: calc(100vh - var(--devbar-h));
   display: grid;
   grid-template-rows: auto 1fr 260px;
   gap: 8px;
@@ -428,7 +437,7 @@ h2 {
 
 /* Audience screen (TV) */
 .audience {
-  height: calc(100vh - 30px);
+  height: calc(100vh - var(--devbar-h));
   background: var(--tv-bg);
   color: var(--tv-text);
   position: relative;
