@@ -347,8 +347,14 @@ h2 {
 .host-top select {
   flex: 1;
   min-width: 200px;
-  padding: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--text);
   font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
 }
 .host-actions {
   display: flex;
@@ -435,44 +441,123 @@ h2 {
   background: var(--danger);
   color: var(--on-color);
 }
+/* Tabs: a pill-shaped switch */
 .tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: var(--space-4);
+  background: var(--panel-2);
+  border-radius: var(--radius-pill);
 }
 .tabs button {
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  border-radius: 4px 4px 0 0;
+  padding: 6px 16px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 500;
   cursor: pointer;
+  transition:
+    background var(--speed-fast),
+    color var(--speed-fast);
+}
+.tabs button:hover {
+  color: var(--text);
 }
 .tabs button.active {
   background: var(--panel);
-  font-weight: bold;
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
+.tabs button:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+/* Settings: small label above each control */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px 16px;
+  gap: var(--space-4) var(--space-6);
   align-items: center;
-  font-size: 14px;
+  align-content: start;
+  font-size: var(--fs-sm);
   overflow-y: auto;
+  accent-color: var(--orange);   /* checkboxes and sliders in brand colour */
 }
 .form-grid .wide {
   grid-column: 1 / -1;
 }
+.form-grid label:has(select),
+.form-grid label:has(input[type='range']) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.form-grid label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+.form-grid input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+}
+.form-grid select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+.form-grid select:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 1px;
+}
+.form-grid input[type='range'] {
+  width: 100%;
+  max-width: 360px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Live timers as small badges */
 .readouts {
   display: flex;
-  gap: 12px;
-  font-family: monospace;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-variant-numeric: tabular-nums;   /* digits line up while counting */
+}
+.readouts span {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
 }
 .claim {
-  margin-top: 4px;
-  padding: 6px;
+  margin-top: var(--space-1);
+  padding: 8px 10px;
   background: var(--warn-bg);
   border: 1px solid var(--warn-border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 .big-btns {
   display: flex;
