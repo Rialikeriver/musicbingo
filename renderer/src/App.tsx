@@ -24,15 +24,18 @@ export default function App() {
 
   return (
     <>
-      {/* Dev-only switcher so we can flip between screens while building */}
-      <nav className="dev-nav">
-        <span>Dev preview:</span>
-        {(['player', 'host', 'audience'] as Screen[]).map((s) => (
-          <a key={s} href={`#/${s}`} className={screen === s ? 'active' : ''}>
-            {s}
-          </a>
-        ))}
-      </nav>
+      {/* Dev-only switcher so we can flip between screens while building.
+          Only shown while running "npm run dev", never in the finished app. */}
+      {import.meta.env.DEV && (
+        <nav className="dev-nav">
+          <span>Dev preview:</span>
+          {(['player', 'host', 'audience'] as Screen[]).map((s) => (
+            <a key={s} href={`#/${s}`} className={screen === s ? 'active' : ''}>
+              {s}
+            </a>
+          ))}
+        </nav>
+      )}
 
       {screen === 'player' && <PlayerCard />}
       {screen === 'host' && <HostCockpit />}

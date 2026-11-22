@@ -1,0 +1,46 @@
+// Tests for DataLookup. Run them with the steps in DataLookup.md.
+import * as assert from 'assert';
+import { DataLookup } from './DataLookup';
+import { Track } from './index';
+
+function makeTrack(id: string, filePath: string): Track {
+  return {
+    id,
+    title: `Title ${id}`,
+    artist: 'Artist',
+    album: 'Album',
+    filePath,
+    startTime: 0,
+    duration: 200,
+  };
+}
+
+const lookup = new DataLookup();
+const track = makeTrack('t1', 'C:/music/one.mp3');
+
+// Starts empty
+assert.strictEqual(lookup.size(), 0);
+assert.strictEqual(lookup.has('t1'), false);
+
+// add + lookups
+lookup.add(track);
+assert.strictEqual(lookup.size(), 1);
+assert.strictEqual(lookup.has('t1'), true);
+assert.strictEqual(lookup.getAddress('t1'), 'C:/music/one.mp3');
+assert.deepStrictEqual(lookup.getTrack('t1'), track);
+
+// Unknown id returns undefined, does not throw
+assert.strictEqual(lookup.getAddress('missing'), undefined);
+assert.strictEqual(lookup.getTrack('missing'), undefined);
+assert.strictEqual(lookup.has('missing'), false);
+
+// Duplicate id is rejected and does not overwrite
+assert.throws(() => lookup.add(makeTrack('t1', 'other.mp3')), /already exists/);
+assert.strictEqual(lookup.getAddress('t1'), 'C:/music/one.mp3');
+
+// remove
+assert.strictEqual(lookup.remove('t1'), true);
+assert.strictEqual(lookup.remove('t1'), false);
+assert.strictEqual(lookup.size(), 0);
+
+console.log('DataLookup: all tests passed');
