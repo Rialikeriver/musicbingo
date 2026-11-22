@@ -65,8 +65,7 @@ export default function HostCockpit() {
                   >
                     <div>
                       <div className="song-title">
-                        - {s.artist}
-                        {s.title}
+                        {s.title} <span className="song-artist">· {s.artist}</span>
                       </div>
                       <div className="song-meta">
                         Start {s.startTime} · Duration {s.duration}
@@ -95,8 +94,7 @@ export default function HostCockpit() {
                   <li key={s.id} className="song-row called">
                     <div>
                       <div className="song-title">
-                        - {s.artist}
-                        {s.title}
+                        {s.title} <span className="song-artist">· {s.artist}</span>
                       </div>
                       <div className="song-meta">Played</div>
                     </div>
