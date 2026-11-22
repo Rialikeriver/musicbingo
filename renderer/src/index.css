@@ -1,3 +1,17 @@
+/* Fonts: stored with the app so they work without internet (licences in assets/fonts) */
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Outfit';
+  src: url('./assets/fonts/Outfit.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
   /* Brand colours */
   --orange: #ff9f00;
@@ -13,7 +27,7 @@
   --ink: #222222;         /* dark strips, e.g. sponsor banner */
   --called: #888888;      /* songs already played */
   --border: #d0d0d0;
-  --selected: #222222;    /* outline around the selected song */
+  --row-hover: #e4e4e4;   /* song row under the mouse */
 
   /* Text */
   --text: #1a1a1a;
@@ -48,8 +62,8 @@
   --shadow-md: 0 4px 12px rgb(0 0 0 / 0.12);
 
   /* Type */
-  --font-body: system-ui, 'Segoe UI', Arial, sans-serif;
-  --font-display: var(--font-body);   /* headings; change in Phase 2 */
+  --font-body: 'Inter', system-ui, 'Segoe UI', Arial, sans-serif;
+  --font-display: 'Outfit', var(--font-body);   /* headings and big buttons */
   --fs-xs: 12px;
   --fs-sm: 14px;
   --fs-md: 16px;
@@ -81,7 +95,9 @@
   --ink: #2c2c2c;
   --called: #555555;
   --border: #333333;
-  --selected: #f2f2f2;
+  --row-hover: #333333;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.5);
   --text: #f2f2f2;
   --muted: #a0a0a0;
   --warn-bg: #3a3000;
@@ -104,6 +120,20 @@ body {
 h1,
 h2 {
   margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}
+
+/* Form controls don't use the page font unless told to */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 h2 {
@@ -184,8 +214,9 @@ h2 {
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3);
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -202,7 +233,7 @@ h2 {
   color: var(--on-color);
   text-align: center;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
 }
 .player-header {
@@ -219,7 +250,7 @@ h2 {
 .pill {
   font-size: 12px;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--panel-2);
 }
 .pill.playing {
@@ -229,16 +260,19 @@ h2 {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-size), 1fr);
-  gap: 4px;
+  gap: calc(30px / var(--grid-size));   /* 6px at 5x5, smaller for bigger grids */
 }
 .cell {
   aspect-ratio: 1;
   font-size: calc(60px / var(--grid-size));
+  font-weight: 500;
   line-height: 1.1;
   overflow-wrap: anywhere;
-  border: 1px solid var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   background: var(--panel);
   color: var(--text);
+  box-shadow: var(--shadow-sm);
   padding: 2px;
   cursor: pointer;
   font-family: inherit;
@@ -254,6 +288,8 @@ h2 {
 .cell.marked {
   background: var(--brand-gradient);
   color: var(--on-color);
+  border-color: transparent;
+  box-shadow: var(--shadow-md);
 }
 .cell.free {
   font-weight: bold;
@@ -265,11 +301,12 @@ h2 {
   font-size: 24px;
   font-weight: bold;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--green);
   color: var(--on-color);
+  box-shadow: var(--shadow-md);
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--font-display);
   transition:
     filter var(--speed-fast),
     transform var(--speed-fast);
@@ -290,7 +327,7 @@ h2 {
   color: var(--muted);
   border: 1px dashed var(--border);
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 /* Host cockpit (laptop) */
@@ -346,17 +383,27 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
-  border-radius: 4px;
-  color: var(--on-color);
-  background: var(--brand-gradient);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--orange);
+  color: var(--text);
+  background: var(--panel-2);
   cursor: pointer;
+  transition: background var(--speed-fast);
 }
+.song-row:hover {
+  background: var(--row-hover);
+}
+/* The selected song gets the brand gradient so it stands out */
 .song-row.selected {
-  outline: 3px solid var(--selected);
+  background: var(--brand-gradient);
+  color: var(--on-color);
+  border-left-color: transparent;
 }
 .song-row.called {
-  background: var(--called);
+  background: transparent;
+  color: var(--muted);
+  border-left-color: var(--called);
   cursor: default;
 }
 .song-title {
@@ -369,7 +416,7 @@ h2 {
 }
 .song-meta {
   font-size: 12px;
-  opacity: 0.9;
+  opacity: 0.75;
 }
 .move-btns {
   display: flex;
@@ -379,7 +426,9 @@ h2 {
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
   cursor: pointer;
 }
 .move-btns button.red {
