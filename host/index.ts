@@ -26,3 +26,40 @@ export interface CustomPattern {
   name: string;
   grid: boolean[][];
 }
+
+
+// Control Panel settings (owned by the Control Panel / Task 3)
+export interface ControlPanelSettings {
+  media: {
+    winnerVideo: string | null;
+    winnerAudio: string | null;
+    backgroundMusic: string | null;
+  };
+  branding: {
+    venueLogo: string | null;
+    sponsorBanners: string[];
+    bannerIntervalSeconds: number;
+  };
+  display: {
+    audienceDisplayId: number | null;
+    fullscreen: boolean;
+  };
+}
+
+
+// The Control Panel settings that hold one chosen file
+export type MediaSettingKey = 'venueLogo' | 'winnerVideo' | 'winnerAudio' | 'backgroundMusic';
+
+
+export interface ControlPanelOptions {
+  bannerIntervalSeconds?: number;
+  fullscreen?: boolean;
+  audienceDisplayId?: number | null; // null = automatic
+}
+
+// One connected screen, as shown in the Control Panel's "Show on" list
+export interface DisplayInfo {
+  id: number;
+  label: string;      // e.g. "Screen 2 – 1920 × 1080"
+  isPrimary: boolean; // true for the laptop's own screen
+}

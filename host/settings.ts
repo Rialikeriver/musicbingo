@@ -1,24 +1,8 @@
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import type { ControlPanelSettings } from './index';
 
-// The shape of all Control Panel settings
-export interface ControlPanelSettings {
-  media: {
-    winnerVideo: string | null;
-    winnerAudio: string | null;
-    backgroundMusic: string | null;
-  };
-  branding: {
-    venueLogo: string | null;
-    sponsorBanners: string[];
-    bannerIntervalSeconds: number;
-  };
-  display: {
-    audienceDisplayId: number | null;
-    fullscreen: boolean;
-  };
-}
 
 // Starting values used on first launch
 export const DEFAULT_SETTINGS: ControlPanelSettings = {
