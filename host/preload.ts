@@ -14,6 +14,13 @@ contextBridge.exposeInMainWorld('bingo', {
   onSettingsChanged: (callback: (settings: unknown) => void) => {
     const listener = (_event: unknown, settings: unknown) => callback(settings);
     ipcRenderer.on('settings:changed', listener);
-    return () => { ipcRenderer.removeListener('settings:changed', listener); };
+        return () => { ipcRenderer.removeListener('settings:changed', listener); };
+  },
+  listDisplays: () => ipcRenderer.invoke('displays:list'),
+  // Run "callback" every time a screen is plugged in or unplugged; returns a "stop listening" function
+  onDisplaysChanged: (callback: (displays: unknown) => void) => {
+    const listener = (_event: unknown, displays: unknown) => callback(displays);
+    ipcRenderer.on('displays:changed', listener);
+    return () => { ipcRenderer.removeListener('displays:changed', listener); };
   }
 });

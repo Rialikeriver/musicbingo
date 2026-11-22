@@ -51,8 +51,15 @@ export interface ControlPanelSettings {
 export type MediaSettingKey = 'venueLogo' | 'winnerVideo' | 'winnerAudio' | 'backgroundMusic';
 
 
-// The simple Control Panel options that can be changed by typing or ticking
 export interface ControlPanelOptions {
   bannerIntervalSeconds?: number;
   fullscreen?: boolean;
+  audienceDisplayId?: number | null; // null = automatic
+}
+
+// One connected screen, as shown in the Control Panel's "Show on" list
+export interface DisplayInfo {
+  id: number;
+  label: string;      // e.g. "Screen 2 – 1920 × 1080"
+  isPrimary: boolean; // true for the laptop's own screen
 }

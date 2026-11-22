@@ -7,13 +7,12 @@ import {
   removeOldCopy, getMediaSetting, setMediaSetting,
   registerMediaScheme, handleMediaRequests
 } from './mediaFiles';
-
+import { listDisplays, chooseAudienceDisplay } from './displays';
 
 // Must happen before the app is ready
 registerMediaScheme();
 
 let audienceWin: BrowserWindow | null = null;
-let audienceOnExternalScreen = false; // true when the TV window is on a second screen
 
 const webPreferences = { preload: path.join(__dirname, 'preload.js') };
 
@@ -37,24 +36,37 @@ function createHostWindow(): void {
 }
 
 function createAudienceWindow(): void {
-  const displays = screen.getAllDisplays();
-  const primary = screen.getPrimaryDisplay();
-  const external = displays.find(d => d.id !== primary.id);
-
-  console.log('Displays found:', displays.length);
-
-  if (external) {
-    const { x, y, width, height } = external.bounds;
-    audienceWin = new BrowserWindow({ x, y, width, height, title: 'Audience', webPreferences });
-    audienceOnExternalScreen = true;
-    audienceWin.setFullScreen(loadSettings().display.fullscreen);
-  } else {
-    audienceWin = new BrowserWindow({ width: 800, height: 600, x: 850, y: 50, title: 'Audience', webPreferences });
-    audienceOnExternalScreen = false;  
-  }
-
+  audienceWin = new BrowserWindow({ width: 800, height: 600, title: 'Audience', webPreferences });
+  placeAudienceWindow();
   loadScreen(audienceWin, 'audience');
   audienceWin.on('closed', () => { audienceWin = null; });
+}
+
+// Put the TV window on the right screen (called at start, when a setting changes,
+// and when a screen is plugged in or unplugged)
+function placeAudienceWindow(): void {
+  if (!audienceWin) return;
+  const settings = loadSettings();
+  const { display, isExternal } = chooseAudienceDisplay(settings.display.audienceDisplayId);
+
+  audienceWin.setFullScreen(false); // leave full screen before moving
+  if (isExternal) {
+    audienceWin.setBounds(display.bounds);
+    audienceWin.setFullScreen(settings.display.fullscreen);
+  } else {
+    // Only the laptop: a normal window, never full screen (it would hide the host's controls)
+    const area = display.workArea;
+    audienceWin.setBounds({ x: area.x + 850, y: area.y + 50, width: 800, height: 600 });
+  }
+  console.log('TV window on:', isExternal ? `external screen ${display.id}` : 'this laptop');
+}
+
+// Tell every window that the list of screens changed
+function shareDisplays(): void {
+  const displays = listDisplays();
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('displays:changed', displays);
+  }
 }
 
 // Save the settings, then tell every window about them (so the TV updates right away)
@@ -129,7 +141,7 @@ ipcMain.handle('settings:removeBanner', (_event, bannerPath: unknown) => {
   return settings;
 });
 
-// Typing "Seconds per banner" or ticking "Full screen": check the values, then save them
+// Typing "Seconds per banner", ticking "Full screen" or choosing "Show on": check, then save
 ipcMain.handle('settings:updateOptions', (_event, changes: ControlPanelOptions) => {
   const settings = loadSettings();
 
@@ -145,18 +157,35 @@ ipcMain.handle('settings:updateOptions', (_event, changes: ControlPanelOptions) 
   if (fullscreen !== undefined) {
     if (typeof fullscreen !== 'boolean') throw new Error('Full screen must be true or false');
     settings.display.fullscreen = fullscreen;
-    // Apply it now, but only on a second screen (never cover the host's own laptop)
-    if (audienceWin && audienceOnExternalScreen) audienceWin.setFullScreen(fullscreen);
+  }
+
+  const displayId = changes?.audienceDisplayId;
+  if (displayId !== undefined) {
+    if (displayId !== null && !Number.isInteger(displayId)) throw new Error('Unknown screen');
+    settings.display.audienceDisplayId = displayId;
   }
 
   saveAndShare(settings);
+  placeAudienceWindow(); // apply the screen and full-screen choice right away
   return settings;
 });
+
+// The Control Panel asks for the list of connected screens
+ipcMain.handle('displays:list', () => listDisplays());
 
 app.whenReady().then(() => {
   handleMediaRequests();
   createHostWindow();
   createAudienceWindow();
+
+  // A TV or projector was plugged in, unplugged, or changed resolution
+  const onScreensChanged = () => {
+    placeAudienceWindow();
+    shareDisplays();
+  };
+  screen.on('display-added', onScreensChanged);
+  screen.on('display-removed', onScreensChanged);
+  screen.on('display-metrics-changed', onScreensChanged);
 });
 
 app.on('window-all-closed', () => {

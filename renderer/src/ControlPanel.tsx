@@ -1,7 +1,7 @@
 // Control Panel: where the host sets up media, branding and the TV screen.
 // Step 5: media, logo, banners, seconds per banner and full screen can all be changed and saved.
 import { useEffect, useState } from 'react';
-import type { ControlPanelSettings, MediaSettingKey } from '../../host/index';
+import type { ControlPanelSettings, MediaSettingKey, DisplayInfo } from '../../host/index';
 import { fileName, mediaUrl } from './media';
 
 // A small picture preview
@@ -32,6 +32,7 @@ export function ControlPanel() {
   const [settings, setSettings] = useState<ControlPanelSettings | null>(null);
   const [secondsText, setSecondsText] = useState(''); // what is typed in "Seconds per banner"
   const [secondsError, setSecondsError] = useState('');
+  const [displays, setDisplays] = useState<DisplayInfo[]>([]); // connected screens
 
   // When the Control Panel opens, ask the app for the saved settings
   useEffect(() => {
@@ -39,6 +40,13 @@ export function ControlPanel() {
       setSettings(loaded);
       setSecondsText(String(loaded.branding.bannerIntervalSeconds));
     });
+  }, []);
+
+  
+  // Get the list of connected screens, and keep it up to date when a TV is plugged in or out
+  useEffect(() => {
+    window.bingo?.listDisplays().then(setDisplays);
+    return window.bingo?.onDisplaysChanged(setDisplays);
   }, []);
 
   if (!window.bingo) {
@@ -66,6 +74,14 @@ export function ControlPanel() {
   const saveFullscreen = (fullscreen: boolean) => {
     window.bingo?.updateOptions({ fullscreen }).then(setSettings);
   };
+
+    // Choosing a screen in "Show on" ("auto" means automatic)
+  const saveDisplay = (value: string) => {
+    window.bingo?.updateOptions({ audienceDisplayId: value === 'auto' ? null : Number(value) }).then(setSettings);
+  };
+
+  const chosenId = settings.display.audienceDisplayId;
+  const chosenMissing = chosenId !== null && !displays.some((d) => d.id === chosenId);
 
   // Open the file picker for one setting, then show the updated settings
   const choose = (key: MediaSettingKey) => {

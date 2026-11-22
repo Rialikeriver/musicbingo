@@ -1,7 +1,6 @@
 // Tells TypeScript what window.bingo (from host/preload.ts) looks like.
 // It only exists inside the Electron app, not in a normal browser, so it is optional (?).
-import type { ControlPanelSettings, ControlPanelOptions, MediaSettingKey } from '../../host/index';
-
+import type { ControlPanelSettings, ControlPanelOptions, MediaSettingKey, DisplayInfo } from '../../host/index';
 declare global {
   interface Window {
     bingo?: {
@@ -13,6 +12,8 @@ declare global {
       removeBanner: (bannerPath: string) => Promise<ControlPanelSettings>;
       updateOptions: (changes: ControlPanelOptions) => Promise<ControlPanelSettings>;
       onSettingsChanged: (callback: (settings: ControlPanelSettings) => void) => () => void;
+      listDisplays: () => Promise<DisplayInfo[]>;
+      onDisplaysChanged: (callback: (displays: DisplayInfo[]) => void) => () => void;
     };
   }
 }
