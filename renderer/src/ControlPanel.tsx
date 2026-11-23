@@ -75,7 +75,7 @@ export function ControlPanel() {
     window.bingo?.updateOptions({ fullscreen }).then(setSettings);
   };
 
-    // Choosing a screen in "Show on" ("auto" means automatic)
+  // Choosing a screen in "Show on" ("auto" means automatic)
   const saveDisplay = (value: string) => {
     window.bingo?.updateOptions({ audienceDisplayId: value === 'auto' ? null : Number(value) }).then(setSettings);
   };
@@ -142,9 +142,15 @@ export function ControlPanel() {
         <h3>TV screen</h3>
         <label style={{ padding: '6px 0' }}>
           <span style={{ display: 'inline-block', width: '180px', fontWeight: 'bold' }}>Show on</span>
-          <select value="auto" disabled>
+          <select value={chosenId === null || chosenMissing ? 'auto' : String(chosenId)} onChange={(e) => saveDisplay(e.target.value)}>
             <option value="auto">Automatic (second screen if connected)</option>
+            {displays.map((d) => (
+              <option key={d.id} value={String(d.id)}>{d.label}</option>
+            ))}
           </select>
+          {chosenMissing && (
+            <span style={{ color: '#d32f2f', marginLeft: '12px' }}>The chosen screen is not connected, so Automatic is used</span>
+          )}
         </label>
         <label style={{ padding: '6px 0' }}>
           <input
