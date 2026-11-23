@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 // The only things the windows are allowed to do
 contextBridge.exposeInMainWorld('bingo', {
@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('bingo', {
   onSettingsChanged: (callback: (settings: unknown) => void) => {
     const listener = (_event: unknown, settings: unknown) => callback(settings);
     ipcRenderer.on('settings:changed', listener);
-        return () => { ipcRenderer.removeListener('settings:changed', listener); };
+    return () => { ipcRenderer.removeListener('settings:changed', listener); };
   },
   listDisplays: () => ipcRenderer.invoke('displays:list'),
   // Run "callback" every time a screen is plugged in or unplugged; returns a "stop listening" function
@@ -23,4 +23,15 @@ contextBridge.exposeInMainWorld('bingo', {
     ipcRenderer.on('displays:changed', listener);
     return () => { ipcRenderer.removeListener('displays:changed', listener); };
   }
+});
+
+contextBridge.exposeInMainWorld('catalogApi', {
+  // Electron 32 and later no longer give dropped files a .path, so ask for it here.
+  getFilePath: (file: File) => webUtils.getPathForFile(file),
+  importFile: (filePath: string, duration: number) =>
+    ipcRenderer.invoke('catalog:import', filePath, duration),
+  list: () => ipcRenderer.invoke('catalog:list'),
+  remove: (id: string) => ipcRenderer.invoke('catalog:remove', id),
+  updateCrop: (id: string, startTime: number, endTime: number) =>
+    ipcRenderer.invoke('catalog:updateCrop', id, startTime, endTime),
 });

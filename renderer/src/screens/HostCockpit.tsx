@@ -1,19 +1,50 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { Track } from '../../../host/index';
 import { rounds, songs } from '../data/fakeData';
 import { CatalogManager } from '../CatalogManager';
 import { ControlPanel } from '../ControlPanel';
 import ThemeToggle from '../components/ThemeToggle';
 import { BingoEngine } from '../../../host/BingoEngine';
 import type { WinningPattern } from '../../../host/BingoEngine';
+import { PlaybackEngine } from '../../../host/PlaybackEngine';
+
+// Choices for the Timers & Volume controls. Call and break are in seconds.
+const CALL_OPTIONS = [
+  { seconds: 30, label: '0:30' },
+  { seconds: 45, label: '0:45' },
+  { seconds: 55, label: '0:55' },
+  { seconds: 60, label: '1:00' },
+  { seconds: 75, label: '1:15' },
+  { seconds: 90, label: '1:30' },
+];
+const BREAK_OPTIONS = [0, 2, 4, 6, 8, 10];
+const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 // Host's laptop screen: the "cockpit" from the legacy walkthrough.
 export default function HostCockpit() {
-  const callList = songs.slice(3);
+  // The engine plays catalog songs; trackLookup lets it find each song's file.
+  const [catalogTracks, setCatalogTracks] = useState<Track[]>([]);
+  const trackLookup = useRef(new Map<string, Track>());
+  const [engine] = useState(() => new PlaybackEngine({
+    getAddress: (id) => trackLookup.current.get(id)?.filePath,
+    getTrack: (id) => trackLookup.current.get(id),
+  }));
+  const audioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    if (!window.catalogApi) return;
+    window.catalogApi.list()
+      .then((saved) => {
+        trackLookup.current = new Map(saved.map((t) => [t.id, t]));
+        setCatalogTracks(saved);
+      })
+      .catch(() => {});
+  }, []);
+  // Saved catalog songs make up the call list when there are any; otherwise the sample songs show.
+  const callList = catalogTracks.length > 0 ? catalogTracks : songs.slice(3);
   const called = songs.slice(0, 3);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<'timers' | 'bingo'>('timers');
   const [activeView, setActiveView] = useState<'dashboard' | 'catalog' | 'controlPanel'>('dashboard');
-
   // Grid size & Pattern dialog state
   const [gridSize, setGridSize] = useState<number>(5);
   const [isPatternOpen, setIsPatternOpen] = useState(false);
@@ -32,15 +63,30 @@ export default function HostCockpit() {
   const centerIndex = Math.floor(gridSize / 2);
 
   const handleCellClick = (r: number, c: number) => {
-    // If middle free space on odd-sized grid, do not toggle
     if (gridSize % 2 !== 0 && r === centerIndex && c === centerIndex) return;
     if (pattern === 'custom') {
-      const updated = BingoEngine.toggleCustomGridCell(customGrid, r, c);
-      setCustomGrid(updated);
+      setCustomGrid(BingoEngine.toggleCustomGridCell(customGrid, r, c));
     }
+  };
+
+  const [callSeconds, setCallSeconds] = useState(engine.getCallDuration());
+  const [breakSeconds, setBreakSeconds] = useState(engine.getBreakDuration());
+  const [speed, setSpeed] = useState(engine.getPlaybackSpeed());
+  const [volume, setVolume] = useState(engine.getVolume());
+  const [randomStart, setRandomStart] = useState(false);
+  const [fadeOut, setFadeOut] = useState(true);
+
+  // Play starts the call list, or resumes it after a pause. Ignored while a song or break is running.
+  const onPlay = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    const state = engine.getState();
+    if (state === 'playing' || state === 'breaking') return;
+    engine.start(catalogTracks.map((t) => t.id), el);
   };
   return (
     <div className="host">
+      <audio ref={audioRef} preload="auto" style={{ display: 'none' }} />
       {/* Top bar */}
       <header className="host-top">
         <select defaultValue={rounds[1]}>
@@ -49,9 +95,9 @@ export default function HostCockpit() {
           ))}
         </select>
         <div className="host-actions">
-          <button className="btn green">▶ Play</button>
-          <button className="btn">⏸ Pause</button>
-          <button className="btn">Next</button>
+          <button className="btn green" onClick={onPlay}>▶ Play</button>
+          <button className="btn" onClick={() => engine.pause()}>⏸ Pause</button>
+          <button className="btn" onClick={() => engine.next()}>Next</button>
           <button className="btn">Reset Game</button>
           <button 
             className={`btn ${activeView === 'catalog' ? 'green' : ''}`} 
@@ -146,15 +192,91 @@ export default function HostCockpit() {
 
               {tab === 'timers' ? (
                 <div className="form-grid">
-                  <label>Call duration <select><option>0:55</option></select></label>
-                  <label>Break duration <select><option>4</option></select></label>
-                  <label>Play speed <select><option>1.00</option></select></label>
+                  <label>
+                    Call duration{' '}
+                    <select
+                      value={callSeconds}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        setCallSeconds(value);
+                        engine.setCallDuration(value);
+                      }}
+                    >
+                      {CALL_OPTIONS.map((o) => (
+                        <option key={o.seconds} value={o.seconds}>{o.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Break duration{' '}
+                    <select
+                      value={breakSeconds}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        setBreakSeconds(value);
+                        engine.setBreakDuration(value);
+                      }}
+                    >
+                      {BREAK_OPTIONS.map((sec) => (
+                        <option key={sec} value={sec}>{sec} s</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Play speed{' '}
+                    <select
+                      value={speed}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        setSpeed(value);
+                        engine.setSpeed(value);
+                      }}
+                    >
+                      {SPEED_OPTIONS.map((x) => (
+                        <option key={x} value={x}>{x.toFixed(2)}x</option>
+                      ))}
+                    </select>
+                  </label>
                   <div className="readouts">
                     <span>Call 0:08</span><span>Break 0</span><span>Time 0:46</span>
                   </div>
-                  <label><input type="checkbox" /> Randomize start time</label>
-                  <label><input type="checkbox" defaultChecked /> Volume fade out</label>
-                  <label className="wide">Volume <input type="range" /></label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={randomStart}
+                      onChange={(e) => {
+                        setRandomStart(e.target.checked);
+                        engine.setRandomStart(e.target.checked);
+                      }}
+                    />
+                    {' '}Randomize start time
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={fadeOut}
+                      onChange={(e) => {
+                        setFadeOut(e.target.checked);
+                        engine.setFadeOut(e.target.checked);
+                      }}
+                    />
+                    {' '}Volume fade out
+                  </label>
+                  <label className="wide">
+                    Volume{' '}
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={volume}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        setVolume(value);
+                        engine.setVolume(value);
+                      }}
+                    />
+                  </label>
                 </div>
               ) : (
                 <div className="form-grid">

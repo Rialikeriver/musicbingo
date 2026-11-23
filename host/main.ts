@@ -1,5 +1,6 @@
-import { app, BrowserWindow, screen, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, screen, ipcMain, dialog, net, protocol } from 'electron';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import { loadSettings, saveSettings } from './settings';
 import type { ControlPanelOptions, ControlPanelSettings } from './index';
 import {
@@ -8,9 +9,16 @@ import {
   registerMediaScheme, handleMediaRequests
 } from './mediaFiles';
 import { listDisplays, chooseAudienceDisplay } from './displays';
+import { CatalogStore } from './CatalogStore';
+import { registerCatalogHandlers } from './catalogIpc';
+import { MEDIA_SCHEME, filePathFromMediaUrl } from './mediaUrl';
 
 // Must happen before the app is ready
 registerMediaScheme();
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+]);
 
 let audienceWin: BrowserWindow | null = null;
 
@@ -175,6 +183,16 @@ ipcMain.handle('displays:list', () => listDisplays());
 
 app.whenReady().then(() => {
   handleMediaRequests();
+
+  // Serve media:// addresses by reading the real file from disk
+  protocol.handle(MEDIA_SCHEME, (request) =>
+    net.fetch(pathToFileURL(filePathFromMediaUrl(request.url)).toString())
+  );
+
+  // Load the saved song catalog and let the import screen talk to it
+  const catalog = new CatalogStore(path.join(app.getPath('userData'), 'catalog.json'));
+  catalog.load();
+  registerCatalogHandlers(ipcMain, catalog);
   createHostWindow();
   createAudienceWindow();
 
