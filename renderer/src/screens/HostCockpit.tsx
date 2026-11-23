@@ -4,6 +4,9 @@ import { rounds, songs } from '../data/fakeData';
 import { CatalogManager } from '../CatalogManager';
 import { ControlPanel } from '../ControlPanel';
 import { PlaybackEngine } from '../../../host/PlaybackEngine';
+import { BingoEngine } from '../../../host/BingoEngine';
+import type { WinningPattern } from '../../../host/BingoEngine';
+import ThemeToggle from '../components/ThemeToggle';
 
 // Choices for the Timers & Volume controls. Call and break are in seconds.
 const CALL_OPTIONS = [
@@ -16,7 +19,6 @@ const CALL_OPTIONS = [
 ];
 const BREAK_OPTIONS = [0, 2, 4, 6, 8, 10];
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
-import ThemeToggle from '../components/ThemeToggle';
 
 // Host's laptop screen: the "cockpit" from the legacy walkthrough.
 export default function HostCockpit() {
@@ -58,6 +60,32 @@ export default function HostCockpit() {
     engine.start(catalogTracks.map((t) => t.id), el);
   };
 
+  // Grid size & Pattern dialog state
+  const [gridSize, setGridSize] = useState<number>(5);
+  const [isPatternOpen, setIsPatternOpen] = useState(false);
+  const [pattern, setPattern] = useState<WinningPattern>('horizontal');
+  const [customGrid, setCustomGrid] = useState<boolean[][]>(() => BingoEngine.createEmptyCustomGrid(5));
+
+  const handleGridSizeChange = (newSize: number) => {
+    setGridSize(newSize);
+    setCustomGrid(BingoEngine.createEmptyCustomGrid(newSize));
+  };
+
+  const activeMask = pattern === 'custom'
+    ? customGrid
+    : BingoEngine.generatePatternMask(pattern, gridSize);
+
+  const centerIndex = Math.floor(gridSize / 2);
+
+  const handleCellClick = (r: number, c: number) => {
+    // If middle free space on odd-sized grid, do not toggle
+    if (gridSize % 2 !== 0 && r === centerIndex && c === centerIndex) return;
+    if (pattern === 'custom') {
+      const updated = BingoEngine.toggleCustomGridCell(customGrid, r, c);
+      setCustomGrid(updated);
+    }
+  };
+
   return (
     <div className="host">
       <audio ref={audioRef} preload="auto" style={{ display: 'none' }} />
@@ -74,11 +102,11 @@ export default function HostCockpit() {
           <button className="btn" onClick={() => engine.next()}>Next</button>
           <button className="btn">Reset Game</button>
           <button 
-          className={`btn ${activeView === 'catalog' ? 'green' : ''}`} 
-          onClick={() => setActiveView(activeView === 'catalog' ? 'dashboard' : 'catalog')}
-        >
-          {activeView === 'catalog' ? '← Back to Cockpit' : 'Create/Edit Catalog'}
-        </button>
+            className={`btn ${activeView === 'catalog' ? 'green' : ''}`} 
+            onClick={() => setActiveView(activeView === 'catalog' ? 'dashboard' : 'catalog')}
+          >
+            {activeView === 'catalog' ? '← Back to Cockpit' : 'Create/Edit Catalog'}
+          </button>
           <button className="btn">Text Preferences</button>
           <button
             className={`btn ${activeView === 'controlPanel' ? 'green' : ''}`}
@@ -258,9 +286,23 @@ export default function HostCockpit() {
                     <strong>Incoming claims</strong>
                     <div className="claim">Card #397: waiting to check…</div>
                   </div>
-                  <button className="btn">Define Bingo pattern</button>
+                  <label>
+                    Grid Size
+                    <select
+                      value={gridSize}
+                      onChange={(e) => handleGridSizeChange(Number(e.target.value))}
+                    >
+                      <option value={3}>3 × 3 (9 squares)</option>
+                      <option value={4}>4 × 4 (16 squares)</option>
+                      <option value={5}>5 × 5 (25 squares)</option>
+                      <option value={6}>6 × 6 (36 squares)</option>
+                    </select>
+                  </label>
+                  <button className="btn" type="button" onClick={() => setIsPatternOpen(true)}>
+                    Define Bingo pattern ({pattern})
+                  </button>
                   <label><input type="checkbox" /> Show pattern on audience screen</label>
-                  <label><input type="checkbox" defaultChecked /> Free space</label>
+                  <label><input type="checkbox" defaultChecked={gridSize % 2 !== 0} /> Free space</label>
                   <div className="wide big-btns">
                     <button className="btn green big">We Have A Bingo!</button>
                     <button className="btn red big">No Bingo</button>
@@ -275,6 +317,80 @@ export default function HostCockpit() {
             </section>
           </footer>
         </>
+      )}
+
+      {/* Pattern Modal from BingoEngine */}
+      {isPatternOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{ backgroundColor: '#1E293B', padding: '20px', borderRadius: '8px', color: '#fff', width: '340px' }}>
+            <h3>Define Pattern ({gridSize}×{gridSize})</h3>
+            <select
+              value={pattern}
+              onChange={(e) => setPattern(e.target.value as WinningPattern)}
+              style={{ width: '100%', padding: '8px', margin: '10px 0', backgroundColor: '#0F172A', color: '#fff', border: '1px solid #475569' }}
+            >
+              <option value="horizontal">Horizontal Line</option>
+              <option value="vertical">Vertical Line</option>
+              <option value="diagonal">Diagonal (\ or /)</option>
+              <option value="cross">Cross (X)</option>
+              <option value="plus">Plus (+)</option>
+              <option value="corners">4 Corners</option>
+              <option value="L">L Shape</option>
+              <option value="blackout">Full Blackout</option>
+              <option value="custom">Custom Pattern (Click Squares)</option>
+            </select>
+
+            <p style={{ fontSize: '12px', color: '#94A3B8', margin: '4px 0 10px 0' }}>
+              {pattern === 'custom'
+                ? 'Click squares to set/unset your custom pattern.'
+                : 'Pattern mask generated by BingoEngine:'}
+            </p>
+
+            {/* X by X Grid Mask from BingoEngine */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+              gap: '4px',
+              margin: '14px 0'
+            }}>
+              {activeMask.map((row, r) =>
+                row.map((active, c) => {
+                  const isFree = (gridSize % 2 !== 0 && r === centerIndex && c === centerIndex);
+                  const isMarked = isFree || active;
+                  return (
+                    <button
+                      key={`${r}-${c}`}
+                      type="button"
+                      onClick={() => handleCellClick(r, c)}
+                      style={{
+                        aspectRatio: '1',
+                        backgroundColor: isMarked ? '#10B981' : '#334155',
+                        border: isFree ? '2px dashed #F59E0B' : '1px solid #475569',
+                        borderRadius: '4px',
+                        cursor: pattern === 'custom' && !isFree ? 'pointer' : 'default',
+                        color: '#fff',
+                        fontSize: '9px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      {isFree ? 'FREE' : ''}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            <button className="btn green" style={{ width: '100%' }} onClick={() => setIsPatternOpen(false)}>
+              Apply Pattern
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

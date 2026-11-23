@@ -2,21 +2,21 @@
 export type WinningPattern =
   | 'horizontal'
   | 'vertical'
-  | 'diagonal'
+  | 'diagonal'    // Either \ or /
   | 'corners'     // 4 corners
   | 'L'           // L shape
   | 'blackout'    // Full card
   | 'plus'        // + sign in the middle
-  | 'cross'       // X sign
-  | 'custom'      // Custom pattern made by host
+  | 'cross'       // X sign (both diagonals)
+  | 'custom';     // Custom pattern made by host
 
-  // Structure for a custom pattern made by host
-  export interface CustomPattern {
-    name: string;         // Unique names of the custom pattern
-    grid: boolean[][];    // 2D grid showing which squares should be marked
-  }
+// Structure for a custom pattern made by host
+export interface CustomPattern {
+  name: string;         // Unique names of the custom pattern
+  grid: boolean[][];    // 2D grid showing which squares should be marked
+}
 
-  // Structure for a single square on the card
+// Structure for a single square on the card
 export interface BingoCardSquare {
   id: string;
   songTitle: string;
@@ -30,7 +30,7 @@ export interface BingoCardSquare {
 // Structure for a full bingo card
 export interface BingoCard {
   cardId: string;               // Unique card id
-  grid: BingoCardSquare[][];    // Bingo card grid (5x5)
+  grid: BingoCardSquare[][];    // Bingo card grid (X by X)
   markedGrid: boolean[][];      // Bingo card marked grid
 }
 
@@ -58,6 +58,29 @@ export class BingoEngine {
     return { rowsCols, totalCards };
   }
 
+  // Converts M3U parsed strings ("Artist-Title") into song objects for generateCard
+  public static formatParsedM3UTracks(
+    rawTracks: string[]
+  ): Array<{ id: string; title: string; artist: string }> {
+    return rawTracks.map((entry, index) => {
+      const separatorIndex = entry.indexOf('-');
+      if (separatorIndex !== -1) {
+        const artist = entry.slice(0, separatorIndex).trim();
+        const title = entry.slice(separatorIndex + 1).trim();
+        return {
+          id: `m3u-${index + 1}`,
+          title: title || entry.trim(),
+          artist: artist || 'Unknown Artist',
+        };
+      }
+      return {
+        id: `m3u-${index + 1}`,
+        title: entry.trim(),
+        artist: 'Unknown Artist',
+      };
+    });
+  }
+
   // Builds a true/false pattern grid mask
   public static generatePatternMask(pattern: WinningPattern, size: number = 5, customGrid?: boolean[][]): boolean[][] {
     let grid: boolean[][] = Array(size).fill(false).map(() => Array(size).fill(false));
@@ -72,15 +95,26 @@ export class BingoEngine {
         for (let c = 0; c < size; c++) grid[size - 1][c] = true;
         break;
       case 'custom': // Custom pattern chosen by host
-        if (customGrid) return customGrid;
+        if (customGrid && customGrid.length === size) return customGrid;
         break;
       case 'horizontal': // Horizontal pattern
         for (let c = 0; c < size; c++) grid[Math.floor(size / 2)][c] = true;
         break;
-      case 'diagonal': // Diagonal pattern
+      case 'diagonal': // Top-left to bottom-right diagonal (\) for single mask preview
+        for (let i = 0; i < size; i++) {
+          grid[i][i] = true;
+        }
+        break;
+      case 'cross': // X pattern (both diagonals)
         for (let i = 0; i < size; i++) {
           grid[i][i] = true;
           grid[i][size - 1 - i] = true;
+        }
+        break;
+      case 'plus': // + pattern (middle row and column)
+        for (let i = 0; i < size; i++) {
+          grid[Math.floor(size / 2)][i] = true;
+          grid[i][Math.floor(size / 2)] = true;
         }
         break;
       case 'corners': // Corner patterns
@@ -96,22 +130,22 @@ export class BingoEngine {
           }
         }
         break;
-      case 'plus': // + pattern
-      case 'cross': // X pattern
-        for (let i = 0; i < size; i++) {
-          grid[Math.floor(size / 2)][i] = true;
-          grid[i][Math.floor(size / 2)] = true;
-        }
-        break;
     }
     return grid;
   }
 
   // Compares the player's marked squares against a pattern mask
   public static validateBingo(markedGrid: boolean[][], patternMask: boolean[][]): boolean {
-    for (let r = 0; r < markedGrid.length; r++) {
-      for (let c = 0; c < markedGrid[r].length; c++) {
-        if (patternMask[r][c] && !markedGrid[r][c]) {
+    const size = markedGrid.length;
+    const centerIndex = Math.floor(size / 2);
+
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        // Center free space is always marked on odd-sized grids
+        const isFree = (size % 2 !== 0 && r === centerIndex && c === centerIndex);
+        const cellMarked = isFree || markedGrid[r][c];
+
+        if (patternMask[r][c] && !cellMarked) {
           return false; // Required pattern square is missing
         }
       }
@@ -127,17 +161,23 @@ export class BingoEngine {
     customMask?: boolean[][]
   ): { isWin: boolean; winningPattern: string } {
     const size = markedGrid.length;
+    const centerIndex = Math.floor(size / 2);
+
+    // Ensure center free space is always true on odd-sized grids
+    const evaluatedGrid = markedGrid.map((row, r) =>
+      row.map((val, c) => (size % 2 !== 0 && r === centerIndex && c === centerIndex ? true : val))
+    );
 
     // If host allows any standard line (horizontal, vertical, diagonal)
     if (selectedPattern === 'standard_line') {
-      const isLineWin = this.validateAnyStandardLine(markedGrid);
+      const isLineWin = this.validateAnyStandardLine(evaluatedGrid);
       return { isWin: isLineWin, winningPattern: 'standard_line' };
     }
 
     // If host selected horizontal, check if ANY horizontal row is completely filled
     if (selectedPattern === 'horizontal') {
       for (let r = 0; r < size; r++) {
-        if (markedGrid[r].every(val => val)) {
+        if (evaluatedGrid[r].every(val => val)) {
           return { isWin: true, winningPattern: 'horizontal' };
         }
       }
@@ -149,7 +189,7 @@ export class BingoEngine {
       for (let c = 0; c < size; c++) {
         let fullCol = true;
         for (let r = 0; r < size; r++) {
-          if (!markedGrid[r][c]) {
+          if (!evaluatedGrid[r][c]) {
             fullCol = false;
             break;
           }
@@ -161,26 +201,43 @@ export class BingoEngine {
       return { isWin: false, winningPattern: 'vertical' };
     }
 
-    // For fixed shape patterns (corners, L, blackout, plus, diagonal, custom)
+    // If host selected diagonal, either \ or / is a win
+    if (selectedPattern === 'diagonal') {
+      let diag1 = true; // \
+      let diag2 = true; // /
+      for (let i = 0; i < size; i++) {
+        if (!evaluatedGrid[i][i]) diag1 = false;
+        if (!evaluatedGrid[i][size - 1 - i]) diag2 = false;
+      }
+      const isWin = diag1 || diag2;
+      return { isWin, winningPattern: 'diagonal' };
+    }
+
+    // For fixed shape patterns (corners, L, blackout, plus, cross, custom)
     const mask = this.generatePatternMask(selectedPattern as WinningPattern, size, customMask);
-    const isWin = this.validateBingo(markedGrid, mask);
+    const isWin = this.validateBingo(evaluatedGrid, mask);
     return { isWin, winningPattern: selectedPattern };
   }
 
   // Helper verifying if any single row, column or diagonal is filled
   public static validateAnyStandardLine(markedGrid: boolean[][]): boolean {
     const size = markedGrid.length;
+    const centerIndex = Math.floor(size / 2);
+
+    const evaluatedGrid = markedGrid.map((row, r) =>
+      row.map((val, c) => (size % 2 !== 0 && r === centerIndex && c === centerIndex ? true : val))
+    );
 
     // Horizontal rows
     for (let r = 0; r < size; r++) {
-      if (markedGrid[r].every(val => val)) return true;
+      if (evaluatedGrid[r].every(val => val)) return true;
     }
 
     // Vertical columns
     for (let c = 0; c < size; c++) {
       let fullCol = true;
       for (let r = 0; r < size; r++) {
-        if (!markedGrid[r][c]) {
+        if (!evaluatedGrid[r][c]) {
           fullCol = false;
           break;
         }
@@ -191,7 +248,7 @@ export class BingoEngine {
     // Diagonal 1 (\)
     let diag1 = true;
     for (let i = 0; i < size; i++) {
-      if (!markedGrid[i][i]) {
+      if (!evaluatedGrid[i][i]) {
         diag1 = false;
         break;
       }
@@ -201,7 +258,7 @@ export class BingoEngine {
     // Diagonal 2 (/)
     let diag2 = true;
     for (let i = 0; i < size; i++) {
-      if (!markedGrid[i][size - 1 - i]) {
+      if (!evaluatedGrid[i][size - 1 - i]) {
         diag2 = false;
         break;
       }
@@ -243,7 +300,7 @@ export class BingoEngine {
     }
   }
 
-  // Generates a unique 5x5 card for players with selected display options
+  // Generates a unique X by X card for players with selected display options
   public static generateCard(
     cardId: string,
     songPool: Array<{ id: string; title: string; artist: string; album?: string }>,
@@ -349,3 +406,5 @@ export class BingoEngine {
     };
   }
 }
+
+export default BingoEngine;
