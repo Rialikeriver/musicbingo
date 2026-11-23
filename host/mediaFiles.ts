@@ -4,6 +4,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { pathToFileURL } from 'url';
 import type { ControlPanelSettings, MediaSettingKey } from './index';
+import { filePathFromMediaUrl } from './mediaUrl';
 
 // Which file types the picker allows for each setting
 export const FILE_FILTERS: Record<MediaSettingKey, { name: string; extensions: string[] }[]> = {
@@ -65,15 +66,26 @@ export function registerMediaScheme(): void {
   ]);
 }
 
-// Step 2 (after the app is ready): answer requests like media://files/banner-123.png
-export function handleMediaRequests(): void {
+// Step 2 (after the app is ready): answer media:// requests
+//   media://files/banner-123.png  -> a file in the app's media folder (logo, banners, commercial)
+//   media://local/<song path>     -> a song, only if isCatalogSong says it is in the catalog
+export function handleMediaRequests(isCatalogSong: (filePath: string) => boolean): void {
   protocol.handle('media', (request) => {
-    const requested = decodeURIComponent(new URL(request.url).pathname);
-    const name = path.basename(requested);          // drop any folders, e.g. "../../"
-    const filePath = path.join(mediaFolder(), name); // only ever look inside the media folder
-    if (!name || !fs.existsSync(filePath)) {
-      return new Response('Not found', { status: 404 });
+    const url = new URL(request.url);
+
+    if (url.hostname === 'files') {
+      const name = path.basename(decodeURIComponent(url.pathname)); // drop any folders, e.g. "../../"
+      const filePath = path.join(mediaFolder(), name);              // only ever look inside the media folder
+      if (!name || !fs.existsSync(filePath)) return new Response('Not found', { status: 404 });
+      return net.fetch(pathToFileURL(filePath).toString());
     }
-    return net.fetch(pathToFileURL(filePath).toString());
+
+    if (url.hostname === 'local') {
+      const filePath = filePathFromMediaUrl(request.url);
+      if (!isCatalogSong(filePath) || !fs.existsSync(filePath)) return new Response('Not found', { status: 404 });
+      return net.fetch(pathToFileURL(filePath).toString());
+    }
+
+    return new Response('Not found', { status: 404 });
   });
 }

@@ -8,6 +8,8 @@ import {
   registerMediaScheme, handleMediaRequests
 } from './mediaFiles';
 import { listDisplays, chooseAudienceDisplay } from './displays';
+import { CatalogStore } from './CatalogStore';
+import { registerCatalogHandlers } from './catalogIpc';
 
 // Must happen before the app is ready
 registerMediaScheme();
@@ -69,6 +71,12 @@ function shareDisplays(): void {
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send('displays:changed', displays);
   }
+}
+
+// True when two file paths point to the same file (Windows ignores upper/lower case)
+function samePath(a: string, b: string): boolean {
+  const normalize = (p: string) => path.normalize(p).toLowerCase();
+  return normalize(a) === normalize(b);
 }
 
 // Save the settings, then tell every window about them (so the TV updates right away)
@@ -223,7 +231,16 @@ ipcMain.handle('commercial:showNow', () => showCommercial());
 ipcMain.handle('displays:list', () => listDisplays());
 
 app.whenReady().then(() => {
-  handleMediaRequests();
+  // Load the saved song catalog and let the import screen talk to it (Harpreet)
+  const catalog = new CatalogStore(path.join(app.getPath('userData'), 'catalog.json'));
+  catalog.load();
+  registerCatalogHandlers(ipcMain, catalog);
+
+  // One media:// handler for everything:
+  //   media://files/...  -> logo, banners, commercial (app's media folder)
+  //   media://local/...  -> songs, but only songs that are in the catalog
+  handleMediaRequests((filePath) => catalog.list().some((track) => samePath(track.filePath, filePath)));
+
   createHostWindow();
   createAudienceWindow();
   updateCommercialTimer();
