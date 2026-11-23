@@ -1,4 +1,4 @@
-import { Track } from '../types';
+import { Track } from './index';
 
 export class PlaybackEngine {
   private currentTrack: Track | null = null;
