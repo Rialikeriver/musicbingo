@@ -1,17 +1,112 @@
-/* Rough skeleton styles. Plain CSS for now; swap for Tailwind if the team picks it. */
+/* Fonts: stored with the app so they work without internet (licences in assets/fonts) */
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Outfit';
+  src: url('./assets/fonts/Outfit.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
 
 :root {
+  /* Brand colours */
   --orange: #ff9f00;
   --red: #ff1a00;
   --green: #1e9e3e;
+  --danger: #d32f2f;
+  --brand-gradient: linear-gradient(135deg, var(--orange), var(--red));
+
+  /* Surfaces (backgrounds) */
+  --bg: #f4f4f4;          /* page background */
+  --panel: #ffffff;       /* cards, panels, buttons */
+  --panel-2: #eeeeee;     /* slightly darker panel, e.g. inactive tabs */
+  --ink: #222222;         /* dark strips, e.g. sponsor banner */
+  --called: #888888;      /* songs already played */
   --border: #d0d0d0;
-  --bg: #f4f4f4;
-  --panel: #ffffff;
+  --row-hover: #e4e4e4;   /* song row under the mouse */
+
+  /* Text */
   --text: #1a1a1a;
-  --muted: #666;
-  font-family: system-ui, 'Segoe UI', Arial, sans-serif;
+  --muted: #666666;
+  --on-color: #ffffff;    /* text that sits on a coloured background */
+
+  /* Notices */
+  --warn-bg: #fff7e0;
+  --warn-border: #f0d080;
+
+  /* TV (audience screen) */
+  --tv-bg: #000000;
+  --tv-text: #ffffff;
+  --tv-panel: #222222;
+  --tv-card: #ffffff;     /* the flipping card on the TV (Phase 7) */
+  --tv-card-text: #1a1a1a;
+
+  /* Spacing: use these instead of random pixel values */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Shape */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.12);
+
+  /* Type */
+  --font-body: 'Inter', system-ui, 'Segoe UI', Arial, sans-serif;
+  --font-display: 'Outfit', var(--font-body);   /* headings and big buttons */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 28px;
+
+  /* Motion */
+  --speed-fast: 120ms;
+  --speed-normal: 250ms;
+
+  /* Bingo card */
+  --grid-size: 5;         /* squares per row; see Phase 4 */
+
+  /* Dev bar height: 0 unless the dev bar is on the page */
+  --devbar-h: 0px;
+
+  color-scheme: light;
+  font-family: var(--font-body);
   color: var(--text);
   background: var(--bg);
+}
+
+/* Dark theme: same token names, different values */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #121212;
+  --panel: #1e1e1e;
+  --panel-2: #2a2a2a;
+  --ink: #2c2c2c;
+  --called: #555555;
+  --border: #333333;
+  --row-hover: #333333;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.5);
+  --text: #f2f2f2;
+  --muted: #a0a0a0;
+  --warn-bg: #3a3000;
+  --warn-border: #806a00;
+}
+
+/* When the dev bar is on the page, make room for it */
+:root:has(.dev-nav) {
+  --devbar-h: 30px;
 }
 
 * {
@@ -27,6 +122,20 @@ h2 {
   margin: 0;
 }
 
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}
+
+/* Form controls don't use the page font unless told to */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 h2 {
   font-size: 16px;
   margin-bottom: 8px;
@@ -37,12 +146,13 @@ h2 {
   font-size: 13px;
 }
 
-/* ---------- Dev nav ---------- */
+/* Dev nav */
 .dev-nav {
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 6px 12px;
+  height: var(--devbar-h);
+  padding: 0 12px;
   background: #222;
   color: #aaa;
   font-size: 13px;
@@ -57,23 +167,44 @@ h2 {
   font-weight: bold;
 }
 
-/* ---------- Shared ---------- */
+/* Shared */
 .btn {
   padding: 6px 12px;
   border: 1px solid var(--border);
-  background: white;
-  border-radius: 4px;
+  background: var(--panel);
+  color: var(--text);
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  font: inherit;
+  transition:
+    filter var(--speed-fast),
+    transform var(--speed-fast),
+    box-shadow var(--speed-fast);
+}
+.btn:hover {
+  filter: brightness(0.95);
+  box-shadow: var(--shadow-sm);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .btn.green {
   background: var(--green);
-  color: white;
+  color: var(--on-color);
   border-color: var(--green);
 }
 .btn.red {
-  background: #d32f2f;
-  color: white;
-  border-color: #d32f2f;
+  background: var(--danger);
+  color: var(--on-color);
+  border-color: var(--danger);
 }
 .btn.big {
   flex: 1;
@@ -83,25 +214,26 @@ h2 {
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3);
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* ---------- Player card (phone) ---------- */
+/* Player card (phone) */
 .player {
   max-width: 420px;
   margin: 0 auto;
   padding: 12px 16px 24px;
 }
 .sponsor-banner {
-  background: #222;
-  color: white;
+  background: var(--ink);
+  color: var(--on-color);
   text-align: center;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
 }
 .player-header {
@@ -118,30 +250,46 @@ h2 {
 .pill {
   font-size: 12px;
   padding: 2px 8px;
-  border-radius: 999px;
-  background: #ddd;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
 }
 .pill.playing {
   background: var(--green);
-  color: white;
+  color: var(--on-color);
 }
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(var(--grid-size), 1fr);
+  gap: calc(30px / var(--grid-size));   /* 6px at 5x5, smaller for bigger grids */
 }
 .cell {
   aspect-ratio: 1;
-  font-size: 11px;
-  border: 1px solid #333;
-  background: white;
-  color: black;
+  font-size: calc(60px / var(--grid-size));
+  font-weight: 500;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
   padding: 2px;
   cursor: pointer;
+  font-family: inherit;
+  transition: transform var(--speed-fast);
+}
+.cell:active {
+  transform: scale(0.95);
+}
+.cell:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 1px;
 }
 .cell.marked {
-  background: linear-gradient(135deg, var(--orange), var(--red));
-  color: white;
+  background: var(--brand-gradient);
+  color: var(--on-color);
+  border-color: transparent;
+  box-shadow: var(--shadow-md);
 }
 .cell.free {
   font-weight: bold;
@@ -153,10 +301,25 @@ h2 {
   font-size: 24px;
   font-weight: bold;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--green);
-  color: white;
+  color: var(--on-color);
+  box-shadow: var(--shadow-md);
   cursor: pointer;
+  font-family: var(--font-display);
+  transition:
+    filter var(--speed-fast),
+    transform var(--speed-fast);
+}
+.bingo-btn:hover {
+  filter: brightness(1.05);
+}
+.bingo-btn:active {
+  transform: scale(0.98);
+}
+.bingo-btn:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
 }
 .result-msg {
   margin-top: 12px;
@@ -164,12 +327,12 @@ h2 {
   color: var(--muted);
   border: 1px dashed var(--border);
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
-/* ---------- Host cockpit (laptop) ---------- */
+/* Host cockpit (laptop) */
 .host {
-  height: calc(100vh - 30px);
+  height: calc(100vh - var(--devbar-h));
   display: grid;
   grid-template-rows: auto 1fr 260px;
   gap: 8px;
@@ -184,8 +347,14 @@ h2 {
 .host-top select {
   flex: 1;
   min-width: 200px;
-  padding: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--text);
   font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
 }
 .host-actions {
   display: flex;
@@ -220,26 +389,40 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
-  border-radius: 4px;
-  color: white;
-  background: linear-gradient(90deg, var(--orange), var(--red));
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--orange);
+  color: var(--text);
+  background: var(--panel-2);
   cursor: pointer;
+  transition: background var(--speed-fast);
 }
+.song-row:hover {
+  background: var(--row-hover);
+}
+/* The selected song gets the brand gradient so it stands out */
 .song-row.selected {
-  outline: 3px solid #222;
+  background: var(--brand-gradient);
+  color: var(--on-color);
+  border-left-color: transparent;
 }
 .song-row.called {
-  background: #888;
+  background: transparent;
+  color: var(--muted);
+  border-left-color: var(--called);
   cursor: default;
 }
 .song-title {
   font-weight: bold;
   font-size: 14px;
 }
+.song-artist {
+  font-weight: normal;
+  opacity: 0.85;
+}
 .song-meta {
   font-size: 12px;
-  opacity: 0.9;
+  opacity: 0.75;
 }
 .move-btns {
   display: flex;
@@ -249,51 +432,132 @@ h2 {
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
   cursor: pointer;
 }
 .move-btns button.red {
-  background: #d32f2f;
-  color: white;
+  background: var(--danger);
+  color: var(--on-color);
 }
+/* Tabs: a pill-shaped switch */
 .tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: var(--space-4);
+  background: var(--panel-2);
+  border-radius: var(--radius-pill);
 }
 .tabs button {
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  background: #eee;
-  border-radius: 4px 4px 0 0;
+  padding: 6px 16px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 500;
   cursor: pointer;
+  transition:
+    background var(--speed-fast),
+    color var(--speed-fast);
+}
+.tabs button:hover {
+  color: var(--text);
 }
 .tabs button.active {
-  background: white;
-  font-weight: bold;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
+.tabs button:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+/* Settings: small label above each control */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px 16px;
+  gap: var(--space-4) var(--space-6);
   align-items: center;
-  font-size: 14px;
+  align-content: start;
+  font-size: var(--fs-sm);
   overflow-y: auto;
+  accent-color: var(--orange);   /* checkboxes and sliders in brand colour */
 }
 .form-grid .wide {
   grid-column: 1 / -1;
 }
+.form-grid label:has(select),
+.form-grid label:has(input[type='range']) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.form-grid label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+.form-grid input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+}
+.form-grid select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+.form-grid select:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 1px;
+}
+.form-grid input[type='range'] {
+  width: 100%;
+  max-width: 360px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Live timers as small badges */
 .readouts {
   display: flex;
-  gap: 12px;
-  font-family: monospace;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-variant-numeric: tabular-nums;   /* digits line up while counting */
+}
+.readouts span {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
 }
 .claim {
-  margin-top: 4px;
-  padding: 6px;
-  background: #fff7e0;
-  border: 1px solid #f0d080;
-  border-radius: 4px;
+  margin-top: var(--space-1);
+  padding: 8px 10px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-md);
 }
 .big-btns {
   display: flex;
@@ -301,19 +565,19 @@ h2 {
 }
 .preview-box {
   flex: 1;
-  background: black;
-  color: white;
+  background: var(--tv-bg);
+  color: var(--tv-text);
   display: grid;
   place-items: center;
   font-size: 24px;
   border-radius: 4px;
 }
 
-/* ---------- Audience screen (TV) ---------- */
+/* Audience screen (TV) */
 .audience {
-  height: calc(100vh - 30px);
-  background: black;
-  color: white;
+  height: calc(100vh - var(--devbar-h));
+  background: var(--tv-bg);
+  color: var(--tv-text);
   position: relative;
   overflow: hidden;
 }
@@ -344,8 +608,7 @@ h2 {
   padding: 32px;
 }
 .logo-box,
-.video-box,
-.flip-card {
+.video-box {
   border: 2px dashed #555;
   display: grid;
   place-items: center;
@@ -379,7 +642,7 @@ h2 {
   grid-column: 1 / -1;
   text-align: center;
   padding: 12px;
-  background: #222;
+  background: var(--tv-panel);
   font-size: 20px;
 }
 .aud-song {
@@ -391,7 +654,7 @@ h2 {
   text-align: center;
   font-size: 64px;
   padding: 16px;
-  background: black;
+  background: var(--tv-bg);
 }
 .video-box {
   flex: 1;
@@ -405,7 +668,82 @@ h2 {
   justify-content: center;
   gap: 24px;
 }
-.flip-card {
-  width: 400px;
-  height: 400px;
+
+/* Card flip */
+.flip {
+  width: min(360px, 70vw);
+  aspect-ratio: 1;
+  perspective: 1000px;
+}
+.flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.8s ease;
+}
+.flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-lg);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  font-size: 48px;
+  font-weight: bold;
+}
+.flip-front {
+  background: var(--tv-card);
+  color: var(--tv-card-text);
+}
+.flip-label {
+  font-size: var(--fs-xl);
+}
+.flip-sub {
+  font-size: var(--fs-lg);
+  opacity: 0.7;
+}
+.flip-back {
+  transform: rotateY(180deg);
+  color: var(--on-color);
+}
+.flip-back.winner {
+  background: var(--brand-gradient);
+}
+.flip-back.no-bingo {
+  background: var(--danger);
+}
+
+/* Small screens */
+@media (max-width: 900px) {
+  .host {
+    height: auto;
+    grid-template-rows: auto;
+  }
+  .host-lists,
+  .host-bottom {
+    grid-template-columns: 1fr;
+  }
+  .song-list {
+    max-height: 40vh;
+  }
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .preview-box {
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -16,6 +16,7 @@ const CALL_OPTIONS = [
 ];
 const BREAK_OPTIONS = [0, 2, 4, 6, 8, 10];
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+import ThemeToggle from '../components/ThemeToggle';
 
 // Host's laptop screen: the "cockpit" from the legacy walkthrough.
 export default function HostCockpit() {
@@ -85,6 +86,7 @@ export default function HostCockpit() {
           >
             {activeView === 'controlPanel' ? '← Back to Cockpit' : 'Control Panel'}
           </button>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -111,8 +113,7 @@ export default function HostCockpit() {
                   >
                     <div>
                       <div className="song-title">
-                        - {s.artist}
-                        {s.title}
+                        {s.title} <span className="song-artist">· {s.artist}</span>
                       </div>
                       <div className="song-meta">
                         Start {s.startTime} · Duration {s.duration}
@@ -141,8 +142,7 @@ export default function HostCockpit() {
                   <li key={s.id} className="song-row called">
                     <div>
                       <div className="song-title">
-                        - {s.artist}
-                        {s.title}
+                        {s.title} <span className="song-artist">· {s.artist}</span>
                       </div>
                       <div className="song-meta">Played</div>
                     </div>

@@ -29,13 +29,7 @@ export class ServerManager {
     });
   }
 
-  public startCommercialInterval(intervalMinutes: number, imageUrl: string): void {
-    this.stopCommercialInterval();
-    const intervalMs = intervalMinutes * 60 * 1000;
-    this.commercialTimer = setInterval(() => {
-      this.io.emit('showCommercialOverlay', { imageUrl });
-    }, intervalMs);
-  }
+  
 
   public stopCommercialInterval(): void {
     if (this.commercialTimer) {
