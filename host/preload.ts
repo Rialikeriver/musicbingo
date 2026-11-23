@@ -22,5 +22,12 @@ contextBridge.exposeInMainWorld('bingo', {
     const listener = (_event: unknown, displays: unknown) => callback(displays);
     ipcRenderer.on('displays:changed', listener);
     return () => { ipcRenderer.removeListener('displays:changed', listener); };
+  },
+  showCommercialNow: () => ipcRenderer.invoke('commercial:showNow'),
+  // Run "callback" when the commercial should appear on the TV; returns a "stop listening" function
+  onCommercialShow: (callback: (commercial: unknown) => void) => {
+    const listener = (_event: unknown, commercial: unknown) => callback(commercial);
+    ipcRenderer.on('commercial:show', listener);
+    return () => { ipcRenderer.removeListener('commercial:show', listener); };
   }
 });

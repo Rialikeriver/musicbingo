@@ -8,7 +8,8 @@ import type { ControlPanelSettings } from './index';
 export const DEFAULT_SETTINGS: ControlPanelSettings = {
   media: { winnerVideo: null, winnerAudio: null, backgroundMusic: null },
   branding: { venueLogo: null, sponsorBanners: [], bannerIntervalSeconds: 10 },
-  display: { audienceDisplayId: null, fullscreen: true }
+  display: { audienceDisplayId: null, fullscreen: true },
+  commercial: { image: null, enabled: false, intervalMinutes: 15, durationSeconds: 15 }
 };
 
 // Where the settings file lives on this computer
@@ -23,7 +24,8 @@ export function loadSettings(): ControlPanelSettings {
     return {
       media:    { ...DEFAULT_SETTINGS.media,    ...saved.media },
       branding: { ...DEFAULT_SETTINGS.branding, ...saved.branding },
-      display:  { ...DEFAULT_SETTINGS.display,  ...saved.display }
+      display:  { ...DEFAULT_SETTINGS.display,  ...saved.display },
+      commercial: { ...DEFAULT_SETTINGS.commercial, ...saved.commercial }
     };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {

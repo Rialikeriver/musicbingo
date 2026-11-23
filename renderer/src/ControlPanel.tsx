@@ -28,6 +28,41 @@ return (
   );
 }
 
+// A number box that saves when the host leaves it or presses Enter, with a red message if the number is wrong
+function NumberSetting({ label, value, min, max, onSave }: {
+  label: string; value: number; min: number; max: number; onSave: (n: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+  const [error, setError] = useState('');
+
+  const save = () => {
+    const n = Number(text);
+    if (!Number.isInteger(n) || n < min || n > max) {
+      setError(`Enter a whole number from ${min} to ${max}`);
+      return;
+    }
+    setError('');
+    if (n !== value) onSave(n);
+  };
+
+  return (
+    <label style={{ padding: '6px 0' }}>
+      <span style={{ display: 'inline-block', width: '180px', fontWeight: 'bold' }}>{label}</span>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => { if (e.key === 'Enter') save(); }}
+        style={{ width: '80px' }}
+      />
+      {error && <span style={{ color: '#d32f2f', marginLeft: '12px' }}>{error}</span>}
+    </label>
+  );
+}
+
 export function ControlPanel() {
   const [settings, setSettings] = useState<ControlPanelSettings | null>(null);
   const [secondsText, setSecondsText] = useState(''); // what is typed in "Seconds per banner"
@@ -75,7 +110,7 @@ export function ControlPanel() {
     window.bingo?.updateOptions({ fullscreen }).then(setSettings);
   };
 
-  // Choosing a screen in "Show on" ("auto" means automatic)
+    // Choosing a screen in "Show on" ("auto" means automatic)
   const saveDisplay = (value: string) => {
     window.bingo?.updateOptions({ audienceDisplayId: value === 'auto' ? null : Number(value) }).then(setSettings);
   };
@@ -136,6 +171,42 @@ export function ControlPanel() {
           />
           {secondsError && <span style={{ color: '#d32f2f', marginLeft: '12px' }}>{secondsError}</span>}
         </label>
+      </section>
+
+      <section className="panel">
+        <h3>Commercial</h3>
+        <SettingRow
+          label="Commercial image"
+          value={fileName(settings.commercial.image)}
+          onChoose={() => choose('commercialImage')}
+          preview={settings.commercial.image}
+        />
+        <label style={{ padding: '6px 0' }}>
+          <input
+            type="checkbox"
+            checked={settings.commercial.enabled}
+            onChange={(e) => window.bingo?.updateOptions({ commercialEnabled: e.target.checked }).then(setSettings)}
+          /> Show the commercial automatically
+        </label>
+        <NumberSetting
+          label="Every (minutes)"
+          value={settings.commercial.intervalMinutes}
+          min={1}
+          max={120}
+          onSave={(n) => window.bingo?.updateOptions({ commercialIntervalMinutes: n }).then(setSettings)}
+        />
+        <NumberSetting
+          label="On screen (seconds)"
+          value={settings.commercial.durationSeconds}
+          min={5}
+          max={120}
+          onSave={(n) => window.bingo?.updateOptions({ commercialDurationSeconds: n }).then(setSettings)}
+        />
+        <div style={{ padding: '6px 0' }}>
+          <button className="btn" disabled={!settings.commercial.image} onClick={() => window.bingo?.showCommercialNow()}>
+            Show now on TV
+          </button>
+        </div>
       </section>
 
       <section className="panel">

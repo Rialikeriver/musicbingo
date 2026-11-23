@@ -44,17 +44,26 @@ export interface ControlPanelSettings {
     audienceDisplayId: number | null;
     fullscreen: boolean;
   };
+  commercial: {
+    image: string | null;     // path to the copied GIF or PNG
+    enabled: boolean;         // show it automatically on a timer
+    intervalMinutes: number;  // how often, e.g. every 15 minutes
+    durationSeconds: number;  // how long it stays on the TV each time
+  };
 }
 
 
 // The Control Panel settings that hold one chosen file
-export type MediaSettingKey = 'venueLogo' | 'winnerVideo' | 'winnerAudio' | 'backgroundMusic';
+export type MediaSettingKey = 'venueLogo' | 'winnerVideo' | 'winnerAudio' | 'backgroundMusic' | 'commercialImage';
 
 
 export interface ControlPanelOptions {
   bannerIntervalSeconds?: number;
   fullscreen?: boolean;
   audienceDisplayId?: number | null; // null = automatic
+  commercialEnabled?: boolean;
+  commercialIntervalMinutes?: number;
+  commercialDurationSeconds?: number;
 }
 
 // One connected screen, as shown in the Control Panel's "Show on" list

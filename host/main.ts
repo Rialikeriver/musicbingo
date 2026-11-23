@@ -13,6 +13,8 @@ import { listDisplays, chooseAudienceDisplay } from './displays';
 registerMediaScheme();
 
 let audienceWin: BrowserWindow | null = null;
+let commercialTimer: NodeJS.Timeout | null = null;
+let commercialTimerKey = ''; // the settings the current timer was started with
 
 const webPreferences = { preload: path.join(__dirname, 'preload.js') };
 
@@ -74,6 +76,31 @@ function saveAndShare(newSettings: ControlPanelSettings): void {
   saveSettings(newSettings);
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send('settings:changed', newSettings);
+  }
+  updateCommercialTimer();
+}
+
+// Show the commercial on the TV once (if one is chosen)
+function showCommercial(): void {
+  const commercial = loadSettings().commercial;
+  if (!commercial.image) return;
+  audienceWin?.webContents.send('commercial:show', {
+    image: commercial.image,
+    durationSeconds: commercial.durationSeconds
+  });
+}
+
+// Start, restart or stop the commercial timer to match the settings
+function updateCommercialTimer(): void {
+  const commercial = loadSettings().commercial;
+  const key = `${commercial.enabled}|${commercial.image}|${commercial.intervalMinutes}`;
+  if (key === commercialTimerKey) return; // nothing that affects the timer changed
+  commercialTimerKey = key;
+
+  if (commercialTimer) clearInterval(commercialTimer);
+  commercialTimer = null;
+  if (commercial.enabled && commercial.image) {
+    commercialTimer = setInterval(showCommercial, commercial.intervalMinutes * 60 * 1000);
   }
 }
 
@@ -159,6 +186,25 @@ ipcMain.handle('settings:updateOptions', (_event, changes: ControlPanelOptions) 
     settings.display.fullscreen = fullscreen;
   }
 
+  // A whole number between min and max, or an error
+  const checkWhole = (value: unknown, min: number, max: number, name: string): number => {
+    if (!Number.isInteger(value) || (value as number) < min || (value as number) > max) {
+      throw new Error(`${name} must be a whole number from ${min} to ${max}`);
+    }
+    return value as number;
+  };
+
+  if (changes?.commercialEnabled !== undefined) {
+    if (typeof changes.commercialEnabled !== 'boolean') throw new Error('Commercial on/off must be true or false');
+    settings.commercial.enabled = changes.commercialEnabled;
+  }
+  if (changes?.commercialIntervalMinutes !== undefined) {
+    settings.commercial.intervalMinutes = checkWhole(changes.commercialIntervalMinutes, 1, 120, 'Minutes between commercials');
+  }
+  if (changes?.commercialDurationSeconds !== undefined) {
+    settings.commercial.durationSeconds = checkWhole(changes.commercialDurationSeconds, 5, 120, 'Seconds on screen');
+  }
+
   const displayId = changes?.audienceDisplayId;
   if (displayId !== undefined) {
     if (displayId !== null && !Number.isInteger(displayId)) throw new Error('Unknown screen');
@@ -170,6 +216,9 @@ ipcMain.handle('settings:updateOptions', (_event, changes: ControlPanelOptions) 
   return settings;
 });
 
+// "Show now" button in the Control Panel
+ipcMain.handle('commercial:showNow', () => showCommercial());
+
 // The Control Panel asks for the list of connected screens
 ipcMain.handle('displays:list', () => listDisplays());
 
@@ -177,6 +226,7 @@ app.whenReady().then(() => {
   handleMediaRequests();
   createHostWindow();
   createAudienceWindow();
+  updateCommercialTimer();
 
   // A TV or projector was plugged in, unplugged, or changed resolution
   const onScreensChanged = () => {

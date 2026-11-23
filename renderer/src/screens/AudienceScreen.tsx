@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ControlPanelSettings } from '../../../host/index';
 import { mediaUrl } from '../media';
 
@@ -10,11 +10,26 @@ export default function AudienceScreen() {
   const [mode, setMode] = useState<Mode>('break');
   const [settings, setSettings] = useState<ControlPanelSettings | null>(null);
   const [bannerIndex, setBannerIndex] = useState(0);
+  const [commercialImage, setCommercialImage] = useState<string | null>(null); // showing now, or null
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load the Control Panel settings, and update them live whenever the host changes something
   useEffect(() => {
     window.bingo?.getSettings().then(setSettings);
     return window.bingo?.onSettingsChanged(setSettings);
+  }, []);
+
+  // When the engine says "show the commercial": show it, then hide it after its seconds
+  useEffect(() => {
+    const stopListening = window.bingo?.onCommercialShow(({ image, durationSeconds }) => {
+      setCommercialImage(image);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      hideTimer.current = setTimeout(() => setCommercialImage(null), durationSeconds * 1000);
+    });
+    return () => {
+      stopListening?.();
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
   }, []);
 
   const logo = settings?.branding.venueLogo ?? null;
@@ -78,6 +93,13 @@ export default function AudienceScreen() {
         <div className="aud-check">
           <h1>Checking card #397…</h1>
           <div className="flip-card">Card-check animation</div>
+        </div>
+      )}
+
+      {/* The commercial covers the whole TV screen while it is showing */}
+      {commercialImage && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'black' }}>
+          <img src={mediaUrl(commercialImage)} alt="Commercial" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
       )}
     </div>

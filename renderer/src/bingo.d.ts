@@ -14,6 +14,8 @@ declare global {
       onSettingsChanged: (callback: (settings: ControlPanelSettings) => void) => () => void;
       listDisplays: () => Promise<DisplayInfo[]>;
       onDisplaysChanged: (callback: (displays: DisplayInfo[]) => void) => () => void;
+      showCommercialNow: () => Promise<void>;
+      onCommercialShow: (callback: (commercial: { image: string; durationSeconds: number }) => void) => () => void;
     };
   }
 }

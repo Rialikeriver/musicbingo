@@ -10,7 +10,8 @@ export const FILE_FILTERS: Record<MediaSettingKey, { name: string; extensions: s
   venueLogo:       [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'svg'] }],
   winnerVideo:     [{ name: 'Videos', extensions: ['mp4', 'webm'] }],
   winnerAudio:     [{ name: 'Audio',  extensions: ['mp3', 'wav', 'm4a', 'ogg'] }],
-  backgroundMusic: [{ name: 'Audio',  extensions: ['mp3', 'wav', 'm4a', 'ogg'] }]
+  backgroundMusic: [{ name: 'Audio',  extensions: ['mp3', 'wav', 'm4a', 'ogg'] }],
+  commercialImage: [{ name: 'GIF or PNG', extensions: ['gif', 'png'] }]
 };
 
 // True only for the four names above (screens could send anything)
@@ -41,13 +42,16 @@ export function removeOldCopy(filePath: string | null): void {
   fs.rmSync(filePath, { force: true });
 }
 
-// Read or change one file setting (the logo lives in "branding", the rest in "media")
+// Read or change one file setting (logo in "branding", commercial in "commercial", the rest in "media")
 export function getMediaSetting(settings: ControlPanelSettings, key: MediaSettingKey): string | null {
-  return key === 'venueLogo' ? settings.branding.venueLogo : settings.media[key];
+  if (key === 'venueLogo') return settings.branding.venueLogo;
+  if (key === 'commercialImage') return settings.commercial.image;
+  return settings.media[key];
 }
 
 export function setMediaSetting(settings: ControlPanelSettings, key: MediaSettingKey, value: string | null): void {
   if (key === 'venueLogo') settings.branding.venueLogo = value;
+  else if (key === 'commercialImage') settings.commercial.image = value;
   else settings.media[key] = value;
 }
 
