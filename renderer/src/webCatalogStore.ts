@@ -1,5 +1,5 @@
 import type { Track } from '../../host/index';
-
+//persistence (in the web host for now. will be moved to the host's machine once the electron app is launched)
 export interface NamedCatalog {
   id: string;
   name: string;
