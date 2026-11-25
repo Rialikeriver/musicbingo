@@ -7,6 +7,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { BingoEngine } from '../../../host/BingoEngine';
 import type { WinningPattern } from '../../../host/BingoEngine';
 import { PlaybackEngine } from '../../../host/PlaybackEngine';
+import { webCatalogApi } from '../webCatalogStore';
 
 // Choices for the Timers & Volume controls. Call and break are in seconds.
 const CALL_OPTIONS = [
@@ -30,21 +31,22 @@ export default function HostCockpit() {
     getTrack: (id) => trackLookup.current.get(id),
   }));
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [activeView, setActiveView] = useState<'dashboard' | 'catalog' | 'controlPanel'>('dashboard');
   useEffect(() => {
-    if (!window.catalogApi) return;
-    window.catalogApi.list()
+    if (activeView !== 'dashboard') return;
+    const catalog = window.catalogApi ?? webCatalogApi;
+    catalog.list()
       .then((saved) => {
         trackLookup.current = new Map(saved.map((t) => [t.id, t]));
         setCatalogTracks(saved);
       })
       .catch(() => {});
-  }, []);
+  }, [activeView]);
   // Saved catalog songs make up the call list when there are any; otherwise the sample songs show.
   const callList = catalogTracks.length > 0 ? catalogTracks : songs.slice(3);
   const called = songs.slice(0, 3);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<'timers' | 'bingo'>('timers');
-  const [activeView, setActiveView] = useState<'dashboard' | 'catalog' | 'controlPanel'>('dashboard');
   // Grid size & Pattern dialog state
   const [gridSize, setGridSize] = useState<number>(5);
   const [isPatternOpen, setIsPatternOpen] = useState(false);

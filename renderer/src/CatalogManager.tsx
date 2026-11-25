@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Track } from '../../host/index';
 import { TrackCropperModal } from './TrackCropperModal';
+import { webCatalogApi, namedCatalogStore, type NamedCatalog } from './webCatalogStore';
 
 export const CatalogManager: React.FC = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -9,16 +10,16 @@ export const CatalogManager: React.FC = () => {
   const [cropError, setCropError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const connected = Boolean(window.catalogApi);
+  const hasHostApi = Boolean(window.catalogApi);
+  const catalog = window.catalogApi ?? webCatalogApi;
 
-  // Show the saved catalog when the screen opens
   useEffect(() => {
-    if (!window.catalogApi) return;
-    window.catalogApi.list()
-      .then(saved => setTracks(saved))
+    const catalog = window.catalogApi ?? webCatalogApi;
+    catalog.list()
+      .then((saved) => setTracks(saved))
       .catch(() => setMessage('Could not load the saved catalog.'));
   }, []);
-
+  
   // Read the length of an audio or video file in the browser
   const getFileDuration = (file: File): Promise<number> => {
     return new Promise((resolve) => {
@@ -43,10 +44,6 @@ export const CatalogManager: React.FC = () => {
       /\.(mp3|mp4|wav|ogg|m4a)$/i.test(file.name)
     );
 
-    if (!window.catalogApi) {
-      setMessage('Not connected to the host, so these songs will not be saved.');
-    }
-
     const added: Track[] = [];
     let duplicates = 0;
     let failed = 0;
@@ -55,30 +52,11 @@ export const CatalogManager: React.FC = () => {
       try {
         const duration = await getFileDuration(file);
         const previewUrl = URL.createObjectURL(file); // Browser preview of this session
-        // The full path on disk, from the host. Plain browser preview falls back to the file name.
-        const filePath = window.catalogApi?.getFilePath(file) || file.name;
+        const filePath = catalog.getFilePath(file);
 
-        if (window.catalogApi) {
-          // The host reads the artist and title, gives the song a stable id, and saves it.
-          // It returns null if this file is already in the catalog.
-          const saved = await window.catalogApi.importFile(filePath, duration);
-          if (saved) added.push({ ...saved, previewUrl });
-          else duplicates += 1;
-        } else {
-          // Plain browser preview: nothing is saved
-          const cleanTitle = file.name.replace(/\.[^/.]+$/, '');
-          added.push({
-            id: `${Date.now()}-${Math.random()}`,
-            title: cleanTitle,
-            artist: 'Unknown Artist',
-            album: 'Unknown Album',
-            filePath,
-            previewUrl,
-            startTime: 0,
-            endTime: duration || 30,
-            duration: duration || 30,
-          });
-        }
+        const saved = await catalog.importFile(filePath, duration);
+        if (saved) added.push({ ...saved, previewUrl });
+        else duplicates += 1;
       } catch {
         failed += 1;
       }
@@ -110,26 +88,26 @@ export const CatalogManager: React.FC = () => {
   };
 
   const handleSaveCrop = async (updatedTrack: Track) => {
-    if (!window.catalogApi) {
-      setTracks(prev => prev.map(t => t.id === updatedTrack.id ? updatedTrack : t));
-      setEditingTrack(null);
-      return;
-    }
-
     try {
-      const result = await window.catalogApi.updateCrop(
-        updatedTrack.id, updatedTrack.startTime, updatedTrack.endTime
+      const result = await catalog.updateCrop(
+        updatedTrack.id,
+        updatedTrack.startTime,
+        updatedTrack.endTime
       );
 
       if (!result) {
-        // The host rejected the crop (for example, end past the song length). Keep the old crop.
+        // The host/store rejected the crop (for example, end past the song length). Keep the old crop.
         setCropError('The host did not save this crop. Check the start and end times.');
         return;
       }
 
-      setTracks(prev => prev.map(t =>
-        t.id === updatedTrack.id ? { ...t, startTime: result.startTime, endTime: result.endTime } : t
-      ));
+      setTracks(prev =>
+        prev.map(t =>
+          t.id === updatedTrack.id
+            ? { ...t, startTime: result.startTime, endTime: result.endTime }
+            : t
+        )
+      );
       setCropError('');
       setEditingTrack(null);
     } catch {
@@ -139,12 +117,10 @@ export const CatalogManager: React.FC = () => {
 
   const removeTrack = async (id: string) => {
     try {
-      if (window.catalogApi) {
-        const removed = await window.catalogApi.remove(id);
-        if (!removed) {
-          setMessage('That song could not be removed from the saved catalog.');
-          return;
-        }
+      const removed = await catalog.remove(id);
+      if (!removed) {
+        setMessage('That song could not be removed from the saved catalog.');
+        return;
       }
       setTracks(prev => prev.filter(t => t.id !== id));
     } catch {
@@ -163,11 +139,11 @@ export const CatalogManager: React.FC = () => {
         style={{ display: 'none' }}
       />
 
-      {!connected && (
-        <div className="panel" style={{ color: '#b45309' }}>
-          Not connected to the host. Songs added here will not be saved.
-        </div>
-      )}
+      {!hasHostApi && (
+              <div className="panel" style={{ color: '#92400e' }}>
+                Running in browser preview: catalog & crops are saved in this browser&apos;s local storage.
+              </div>
+            )}
 
       {/* Drag & Drop */}
       <div
