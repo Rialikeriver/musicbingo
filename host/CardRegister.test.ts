@@ -159,4 +159,50 @@ register.clear();
 assert.strictEqual(register.size(), 0);
 assert.deepStrictEqual(register.all(), []);
 
+// ---- Fair shuffle: every song should be about equally likely to land on a card ----
+// (A random-comparator sort made early songs appear ~28% more often than late ones.)
+const bigPool = Array.from({ length: 100 }, (_, i) => ({ id: `b${i}`, title: `B ${i}`, artist: `A ${i}` }));
+const appearances = new Map<string, number>(bigPool.map(song => [song.id, 0]));
+for (let k = 0; k < 2000; k++) {
+  for (const square of BingoEngine.generateCard(String(k), bigPool).grid.flat()) {
+    if (!square.isFreeSpace) appearances.set(square.id, appearances.get(square.id)! + 1);
+  }
+}
+const expected = (2000 * 24) / 100;
+const groupRatio = (from: number, to: number): number =>
+  bigPool.slice(from, to).reduce((sum, song) => sum + appearances.get(song.id)!, 0) / (to - from) / expected;
+assert.ok(Math.abs(groupRatio(0, 10) - 1) < 0.08, `first songs ratio ${groupRatio(0, 10)}`);
+assert.ok(Math.abs(groupRatio(45, 55) - 1) < 0.08, `middle songs ratio ${groupRatio(45, 55)}`);
+assert.ok(Math.abs(groupRatio(90, 100) - 1) < 0.08, `last songs ratio ${groupRatio(90, 100)}`);
+
+// ---- No song appears twice on one card ----
+for (const card of new CardRegister().generate(bigPool, { count: 50 })) {
+  const ids = card.grid.flat().filter(s => !s.isFreeSpace).map(s => s.id);
+  assert.strictEqual(new Set(ids).size, ids.length);
+}
+
+// ---- Enough different songs are needed to fill a card ----
+const songsOf = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `x${i}`, title: `X ${i}`, artist: 'A' }));
+assert.throws(() => new CardRegister().generate(songsOf(23), { count: 1 }), /needs at least 24 different songs, but only 23/);
+assert.strictEqual(new CardRegister().generate(songsOf(24), { count: 2 }).length, 2);
+// Without a free space the same card needs 25
+assert.throws(() => new CardRegister().generate(songsOf(24), { count: 1, freeSpace: false }), /needs at least 25/);
+assert.strictEqual(new CardRegister().generate(songsOf(25), { count: 2, freeSpace: false }).length, 2);
+// A 6x6 card has no free square, so it needs 36
+assert.throws(() => new CardRegister().generate(songsOf(35), { count: 1, size: 6 }), /needs at least 36/);
+// The same song listed twice only counts once
+const repeated = [...songsOf(20), ...songsOf(20)];
+assert.throws(() => new CardRegister().generate(repeated, { count: 1 }), /only 20 were given/);
+const dupes = [...songsOf(30), ...songsOf(30)];
+for (const card of new CardRegister().generate(dupes, { count: 20 })) {
+  const ids = card.grid.flat().filter(s => !s.isFreeSpace).map(s => s.id);
+  assert.strictEqual(new Set(ids).size, 24);
+}
+
+// ---- Card size must be a whole number of at least 3 ----
+for (const badSize of [0, 1, 2, 2.5, -3, NaN]) {
+  assert.throws(() => new CardRegister().generate(pool, { count: 1, size: badSize }), RangeError);
+}
+assert.strictEqual(new CardRegister().generate(pool, { count: 1, size: 3 })[0].grid.length, 3);
+
 console.log('CardRegister: all tests passed');

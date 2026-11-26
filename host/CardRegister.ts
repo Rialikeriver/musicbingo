@@ -47,14 +47,27 @@ export class CardRegister {
     if (!Number.isInteger(count) || count < 1) {
       throw new RangeError(`Card count must be a whole number of at least 1, got ${count}`);
     }
+    if (!Number.isInteger(size) || size < 3) {
+      throw new RangeError(`Card size must be a whole number of at least 3, got ${size}`);
+    }
     if (songPool.length === 0) {
       throw new Error('Cannot make cards from an empty song list');
+    }
+
+    // Use each song once. A card with the same song twice would mark two squares at once.
+    const songs = [...new Map(songPool.map(song => [song.id, song])).values()];
+    const hasFreeSquare = freeSpace && size % 2 !== 0;
+    const songSquares = size * size - (hasFreeSquare ? 1 : 0);
+    if (songs.length < songSquares) {
+      throw new Error(
+        `A ${size}x${size} card needs at least ${songSquares} different songs, but only ${songs.length} were given`
+      );
     }
 
     this.cards.clear();
     for (let n = 1; n <= count; n++) {
       this.add(
-        BingoEngine.generateCard(String(n), songPool, size, displayOption, scrambleOnPlayerSide, freeSpace)
+        BingoEngine.generateCard(String(n), songs, size, displayOption, scrambleOnPlayerSide, freeSpace)
       );
     }
     return this.all();

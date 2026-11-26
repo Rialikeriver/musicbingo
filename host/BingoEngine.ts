@@ -311,7 +311,7 @@ export class BingoEngine {
     scrambleOnPlayerSide: boolean = false,
     freeSpace: boolean = true
   ): BingoCard {
-    const shuffled = [...songPool].sort(() => Math.random() - 0.5);
+    const shuffled = this.shuffled(songPool);
     const grid: BingoCardSquare[][] = [];
     const markedGrid: boolean[][] = [];
     const centerIndex = Math.floor(size / 2);
@@ -360,6 +360,17 @@ export class BingoEngine {
     }
 
     return { cardId, grid, markedGrid };
+  }
+
+  // Fair random order (Fisher-Yates). Sorting with a random comparator is biased:
+  // songs near the start of the list end up on more cards than songs near the end.
+  private static shuffled<T>(items: T[]): T[] {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
   }
 
   // True if the card has a free space square (used to pass the right freeSpace value to the validators)
