@@ -6,14 +6,16 @@ export type CheckResult = 'checking' | 'winner' | 'no-bingo';
 interface CardFlipProps {
   cardNumber: number;
   result: CheckResult;
+  lastFlipWait?: number;
+  animated?: boolean; // optional: if false, the flip is instant
 }
 
-export default function CardFlip({ cardNumber, result }: CardFlipProps) {
+export default function CardFlip({ cardNumber, result, lastFlipWait = 5, animated = true }: CardFlipProps) {
   const flipped = result !== 'checking';
 
   return (
     <div className="flip">
-      <div className={`flip-inner ${flipped ? 'is-flipped' : ''}`}>
+      <div className={`flip-inner ${flipped ? 'is-flipped' : ''}`} style={{ transitionDuration: `${animated ? lastFlipWait : 0}s` }}>
         {/* Front: shown while checking */}
         <div className="flip-face flip-front">
           <span className="flip-label">Card #{cardNumber}</span>
