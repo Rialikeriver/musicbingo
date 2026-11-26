@@ -135,14 +135,14 @@ export class BingoEngine {
   }
 
   // Compares the player's marked squares against a pattern mask
-  public static validateBingo(markedGrid: boolean[][], patternMask: boolean[][]): boolean {
+  public static validateBingo(markedGrid: boolean[][], patternMask: boolean[][], freeSpace: boolean = true): boolean {
     const size = markedGrid.length;
     const centerIndex = Math.floor(size / 2);
 
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
-        // Center free space is always marked on odd-sized grids
-        const isFree = (size % 2 !== 0 && r === centerIndex && c === centerIndex);
+        // Center free space is always marked on odd-sized grids (unless free space is off)
+        const isFree = (freeSpace && size % 2 !== 0 && r === centerIndex && c === centerIndex);
         const cellMarked = isFree || markedGrid[r][c];
 
         if (patternMask[r][c] && !cellMarked) {
@@ -158,19 +158,20 @@ export class BingoEngine {
   public static validateCardAgainstRoundPattern(
     markedGrid: boolean[][],
     selectedPattern: WinningPattern | 'standard_line',
-    customMask?: boolean[][]
+    customMask?: boolean[][],
+    freeSpace: boolean = true
   ): { isWin: boolean; winningPattern: string } {
     const size = markedGrid.length;
     const centerIndex = Math.floor(size / 2);
 
-    // Ensure center free space is always true on odd-sized grids
+    // Ensure center free space is always true on odd-sized grids (unless free space is off)
     const evaluatedGrid = markedGrid.map((row, r) =>
-      row.map((val, c) => (size % 2 !== 0 && r === centerIndex && c === centerIndex ? true : val))
+      row.map((val, c) => (freeSpace && size % 2 !== 0 && r === centerIndex && c === centerIndex ? true : val))
     );
 
     // If host allows any standard line (horizontal, vertical, diagonal)
     if (selectedPattern === 'standard_line') {
-      const isLineWin = this.validateAnyStandardLine(evaluatedGrid);
+      const isLineWin = this.validateAnyStandardLine(evaluatedGrid, freeSpace);
       return { isWin: isLineWin, winningPattern: 'standard_line' };
     }
 
@@ -215,17 +216,17 @@ export class BingoEngine {
 
     // For fixed shape patterns (corners, L, blackout, plus, cross, custom)
     const mask = this.generatePatternMask(selectedPattern as WinningPattern, size, customMask);
-    const isWin = this.validateBingo(evaluatedGrid, mask);
+    const isWin = this.validateBingo(evaluatedGrid, mask, freeSpace);
     return { isWin, winningPattern: selectedPattern };
   }
 
   // Helper verifying if any single row, column or diagonal is filled
-  public static validateAnyStandardLine(markedGrid: boolean[][]): boolean {
+  public static validateAnyStandardLine(markedGrid: boolean[][], freeSpace: boolean = true): boolean {
     const size = markedGrid.length;
     const centerIndex = Math.floor(size / 2);
 
     const evaluatedGrid = markedGrid.map((row, r) =>
-      row.map((val, c) => (size % 2 !== 0 && r === centerIndex && c === centerIndex ? true : val))
+      row.map((val, c) => (freeSpace && size % 2 !== 0 && r === centerIndex && c === centerIndex ? true : val))
     );
 
     // Horizontal rows
@@ -301,12 +302,14 @@ export class BingoEngine {
   }
 
   // Generates a unique X by X card for players with selected display options
+  // freeSpace: false leaves the middle square as a normal song square
   public static generateCard(
     cardId: string,
     songPool: Array<{ id: string; title: string; artist: string; album?: string }>,
     size: number = 5,
     displayOption: DisplayOption = 'song',
-    scrambleOnPlayerSide: boolean = false
+    scrambleOnPlayerSide: boolean = false,
+    freeSpace: boolean = true
   ): BingoCard {
     const shuffled = [...songPool].sort(() => Math.random() - 0.5);
     const grid: BingoCardSquare[][] = [];
@@ -320,7 +323,7 @@ export class BingoEngine {
       const rowMarked: boolean[] = [];
 
       for (let c = 0; c < size; c++) {
-        const isFree = (size % 2 !== 0 && r === centerIndex && c === centerIndex);
+        const isFree = (freeSpace && size % 2 !== 0 && r === centerIndex && c === centerIndex);
 
         if (isFree) {
           rowSquares.push({
@@ -357,6 +360,11 @@ export class BingoEngine {
     }
 
     return { cardId, grid, markedGrid };
+  }
+
+  // True if the card has a free space square (used to pass the right freeSpace value to the validators)
+  public static cardHasFreeSpace(card: BingoCard): boolean {
+    return card.grid.some(row => row.some(square => square.isFreeSpace));
   }
 
   // Scrambles word characters for hint mode while preserving spaces
