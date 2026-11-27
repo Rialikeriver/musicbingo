@@ -8,6 +8,7 @@ import { BingoEngine } from '../../../host/BingoEngine';
 import type { WinningPattern } from '../../../host/BingoEngine';
 import { PlaybackEngine } from '../../../host/PlaybackEngine';
 import { webCatalogApi } from '../webCatalogStore';
+import TextPreferences from '../components/TextPreferences';
 
 // Choices for the Timers & Volume controls. Call and break are in seconds.
 const CALL_OPTIONS = [
@@ -50,6 +51,7 @@ export default function HostCockpit() {
   // Grid size & Pattern dialog state
   const [gridSize, setGridSize] = useState<number>(5);
   const [isPatternOpen, setIsPatternOpen] = useState(false);
+  const [isTextPrefsOpen, setIsTextPrefsOpen] = useState(false);
   const [pattern, setPattern] = useState<WinningPattern>('horizontal');
   const [customGrid, setCustomGrid] = useState<boolean[][]>(() => BingoEngine.createEmptyCustomGrid(5));
 
@@ -107,7 +109,9 @@ export default function HostCockpit() {
           >
             {activeView === 'catalog' ? '← Back to Cockpit' : 'Create/Edit Catalog'}
           </button>
-          <button className="btn">Text Preferences</button>
+          <button className="btn" onClick={() => setIsTextPrefsOpen(true)}>
+            Text Preferences
+          </button>
           <button
             className={`btn ${activeView === 'controlPanel' ? 'green' : ''}`}
             onClick={() => setActiveView(activeView === 'controlPanel' ? 'dashboard' : 'controlPanel')}
@@ -318,6 +322,7 @@ export default function HostCockpit() {
           </footer>
         </>
       )}
+      {isTextPrefsOpen && <TextPreferences onClose={() => setIsTextPrefsOpen(false)} />}
 
       {/* Pattern Modal from BingoEngine */}
       {isPatternOpen && (

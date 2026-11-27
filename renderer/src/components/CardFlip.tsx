@@ -32,6 +32,7 @@ function playDing(pitch: number = 880, delay: number = 0): void {
   tone.onended = () => audio.close();     // free the sound system when done
 }
 
+// A card that flips over to reveal the result of a bingo check.
 export default function CardFlip({ cardNumber, result, lastFlipWait = 3, flipWait = 1, animated = true }: CardFlipProps) {
   const [revealed, setRevealed] = useState(false);
   const flipped = revealed && result !== 'checking'; // true if the card is flipped over to show the result

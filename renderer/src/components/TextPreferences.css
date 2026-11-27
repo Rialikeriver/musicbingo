@@ -1,0 +1,42 @@
+/* Styles for the Text Preferences pop-up. */
+
+/* Dark layer over the whole screen */
+.prefs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* The box in the middle */
+.prefs-box {
+  background: var(--panel);
+  color: var(--text);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  width: min(520px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Mini TV title bar */
+.prefs-preview {
+  padding: var(--space-4);
+  text-align: center;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* One label + control per row */
+.prefs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
